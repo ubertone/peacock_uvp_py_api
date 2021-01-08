@@ -12,4 +12,9 @@ sorry for the remaining French comments, we will work on it soon.
 # test
 
 run test with :
-`python3 ./tests/test_modbus.py`
+
+```
+python3 ./tests/test_modbus.py
+python3 ./tests/test_apf04_driver_basic.py
+python3 ./tests/test_apf04_driver.py
+```
