@@ -7,7 +7,6 @@
 # @author Stéphane Fischer
 
 from datetime import datetime
-#from time import timezone # TODO depreciated ?
 import struct
 import logging
 
@@ -15,7 +14,6 @@ from .apf04_modbus import Apf04Modbus
 from .apf04_addr_cmd import *
 from .apf04_config_hw import ConfigHw
 from .apf_timestamp import convert_timestamp
-from .ap_exception import ap_protocol_error
 
 # TODO gérer ici les erreur spécifiques au HW
 
@@ -92,6 +90,7 @@ class Apf04Driver (Apf04Modbus):
 		"""
 		addr_ss_auto = ADDR_SOUND_SPEED_AUTO
 		addr_ss_set = ADDR_SOUND_SPEED_SET
+		# fix for firmware prior to 45
 		if self.version_c < 45:
 			addr_ss_auto -= 2
 			addr_ss_set -= 2

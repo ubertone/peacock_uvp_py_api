@@ -21,8 +21,7 @@ def hex_print (_bytes):
 	print (''.join('%02x'%i for i in _bytes))
 
 class Apf04Modbus ():
-	"""
-	@brief Modbus communication layer
+	"""	@brief Modbus communication layer
 	
 	modbus est en big-endian (défaut)
 	l'adressage est fait en 16 bits.

@@ -9,7 +9,7 @@
 import logging
 
 from .apf04_gain import convert_dB_m2code, convert_code2dB_m, convert_code2dB, convert_dB2code, APF04_CODE_MAX_APPLIED
-from .ap_exception import ap_protocol_error
+#from .ap_exception import ap_protocol_error
 from .apf_type import cast_int16, cast_uint16
 
 #ap_protocol_error(3300, "Warning: v_min has to be in [-Nyquist_Range, 0].")

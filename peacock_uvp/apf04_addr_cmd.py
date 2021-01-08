@@ -33,8 +33,6 @@ CMD_TEST_LED = 190
 CMD_TEST_I2C = 195 
 
 ADDR_ACTION = 0xFFFD
-ADR_result = 0x005E # TODO depreciated, supprimer
-ADR_I2C = 0x0058  # TODO depreciated, supprimer
 
 ADDR_VERSION_C    = 0x0000
 ADDR_VERSION_VHDL = 0xFFFE
@@ -69,4 +67,3 @@ ADDR_GAIN_CA1 = 0x005D
 ADDR_PROFILE_HEADER = 0x0058 # adresse du tangage, 1er sensor
 SIZE_PROFILE_HEADER = 8
 ADDR_PROFILE_DATA = 0x0060 # le début des données
-
