@@ -12,7 +12,7 @@ from sys import platform
 import traceback
 import logging
 
-from .ap_exception import ap_hardware_error
+from .ap_exception import ap_hardware_error, ap_protocol_error
 from .modbus_crc import crc16
 
 # TODO 1 : mettre à jour, créer un apf04_exception ?
@@ -39,67 +39,55 @@ class Apf04Modbus ():
 	modbus est en big-endian (défaut)
 	l'adressage est fait en 16 bits.
 	"""
-	def __init__(self, _baudrate=230400, _dev=None):
+	def __init__(self, _baudrate=None, _dev=None):
 		"""
 		@brief Initialisation de la couche communication de l'instrument
 		"""
 		# Default device address on modbus
 		self.apf04_addr = 0x04
 
-		# TODO mettre dans apf04_addr_cmd.py
-		self.addr_ram_begin =  0x0000
-		self.addr_ram_end =    0x07FF
-		self.addr_reg_action = 0xFFFD
+		#la lecture et l'écriture de bloc sont segmentées en blocs de 123 mots 
+		# Modbus limite les blocs à un maximum de 123 mots en ecriture et 125 mots en lecture
+		self.max_seg_size = 123
 
 		logging.debug("Platform is %s", platform)
 
 		# TODO try / except serial.serialutil.SerialException : raise ap_hardware_error(...
-		if _dev :
-			self.usb_device = _dev
-		else :
-			# In case of a Linux system, we can find the port of the APF04 automatically thanks to the serial.tools.list_ports library and knowing that the RS485 to USB adapter has PID:VID = 0403:6001
-			# TODO: Mettre un try catch autour des tests if. Si usb_device n'est pas défini après, on quitte le process.
-			if platform == "linux" or platform == "linux2" or platform == "darwin": # linux and Mac OS
+		# TODO: Mettre un try catch autour des tests if. Si usb_device n'est pas défini après, on quitte le process.
+		self.usb_device = _dev
+
+		if self.usb_device is None :
+			# In case of a *nux system, we can find the port of the APF04 
+			# automatically thanks to the serial.tools.list_ports library 
+			# and knowing that the RS485 to USB adapter has PID:VID = 0403:6001
+			if platform in ["linux","linux2","darwin"]: # linux and Mac OS
 				import serial.tools.list_ports as lPort
-				found = False
 				reslt = lPort.comports()
 				for res in reslt:
-					if "0403:6001" in res[2]: # dongle USB avec alim
-						logging.debug("This is APF04 Device: %s", res[2])
-						found = True
+					if "0403:6001" in res[2] or "1A86:7523" in res[2]: # dongle USB avec et sans alim
+						logging.debug("APF04 detected on serial port: %s", res[2])
 						self.usb_device = res[0]
-					elif "1A86:7523" in res[2]: # dongle USB sans alim
-						logging.debug("This is APF04 Device: %s", res[2])
-						found = True
-						self.usb_device = res[0]
-				if found == False: # no device were found on USB
-					logging.info("No APF04 found on USB port. Setting /dev/ttyAMA0 as default.")
-					self.usb_device = '/dev/ttyAMA0' # this is the default device on ubertux2/batpacker
-					#raise ap_hardware_error(3100, "No APF04 found on USB port.")
 
-			elif platform == "cygwin": # cygwin
-				#self.usb_device = "/dev/ttyS3" # WARNING not tested yet with pymodbus, should be modified manually
-				logging.info("Software not configured for Cygwin yet")
-				ap_hardware_error(3101, "Warning, undefined OS for USB port")
+			# for platform == "cygwin" and "win32", the serial port should be modified manually: 
+			# for example "/dev/ttyS3" on cygwin or "COM10" on Windows
 
-			elif platform == "win32": # Windows
-				self.usb_device = "COM10" # WARNING not tested yet with pymodbus, should be modified manually
-			else :
-				raise ap_hardware_error(3101, "Warning, undefined OS for USB port")
+			if self.usb_device is None : # usb device could not be detected
+				logging.critical("USB device cannot be detected automatically, check the wiring or specify the device port.")
+				raise
 
 		logging.debug("usb_device is at %s with baudrate %s"%(self.usb_device, _baudrate))
-
-		self.ser = serial.Serial(self.usb_device, _baudrate, timeout=2., \
-				bytesize=8, parity='N', stopbits=1, xonxoff=0, rtscts=0)
+		if _baudrate :
+			self.connect(_baudrate)
 
 		# In order to reduce serial lattency of the linux driver, you may set the ASYNC_LOW_LATENCY flag :
 		# setserial /dev/<tty_name> low_latency
 
-		#la lecture et l'écriture de bloc sont segmentées en blocs de 123 mots 
-		# Modbus limite les blocs à un maximum de 123 mots en ecriture et 125 mots en lecture
-		self.max_seg_size=123
-
 		logging.debug("end init")
+
+	def connect (self, _baudrate):
+		# Create an instance of the Peacock's driver at a given baudrate
+		self.ser = serial.Serial(self.usb_device, _baudrate, timeout=2., \
+		           bytesize=8, parity='N', stopbits=1, xonxoff=0, rtscts=0)
 
 	def __del__(self):
 		# close serial port
@@ -118,15 +106,43 @@ class Apf04Modbus ():
 			self.log("hardware apparently disconnected")
 			#raise ap_hardware_error(3107, "FAIL to set timeout on modbus")
 
+	def autobaud (self):
+		"""
+		@return baudrate if detected, None instead
+
+		WARNING : be carefull, this method is not robust, you may try several time 
+		"""
+		# Scan available baudrates for the Peacock UVP
+		for baudrate in [57600,230400,750000]:
+			try:
+				logging.debug("try if baudrate = %d"%baudrate)
+				self.connect(baudrate)
+				# Read the firmware version
+				self.read_i16(0)
+			except:
+				# if failed, the baudrate is wrong
+				self.ser.close()
+
+				continue
+		
+			# if success, the baudrate is correct 
+			return baudrate
+		
+		logging.debug("Fail to detect the baudrate automatically")
+		return None
 	
 	# @ verification de l'existance de la zone memoire
 	# @param _begin : addresse de début en octets
 	# @param _size : taille du bloc en mots (16 bits)
 	def __check_addr_range(self, _begin, _size):
+		addr_ram_begin =  0x0000
+		addr_ram_end =    0x07FF
+		addr_reg_action = 0xFFFD # also defined as ADDR_ACTION in apf04_addr_cmd.py
+
 		# adresses des blocs mémoire :
-		assert(_begin>=self.addr_ram_begin)
-		if _begin>self.addr_ram_end:
-			assert _begin!=self.addr_reg_action and _size!=1, "Warning, access at %d, size= %d bytes not allowed"%(_begin, _size)
+		assert(_begin>=addr_ram_begin)
+		if _begin>addr_ram_end:
+			assert _begin!=addr_reg_action and _size!=1, "Warning, access at %d, size= %d bytes not allowed"%(_begin, _size)
 
 	def __read__(self, _size):
 		if _size == 0:

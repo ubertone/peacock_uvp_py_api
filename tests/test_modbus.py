@@ -12,6 +12,7 @@ sys.path.insert(0, webui_path)
 #-------------------------------------
 
 import time
+import logging
 
 from peacock_uvp.apf04_modbus import Apf04Modbus as modbus
 
@@ -20,10 +21,10 @@ def hex_print (_bytes):
 	print (''.join('%02x'%i for i in _bytes))
 
 baudrate = 230400
+logging.basicConfig(level=logging.DEBUG)
 
 # The main test class
 class TestApf04Modbus(unittest.TestCase):
-
 	def test1_readseg(self):
 		apf = modbus(baudrate) # , "/dev/tty.usbserial-FTWVIUZU"
 
@@ -86,6 +87,17 @@ class TestApf04Modbus(unittest.TestCase):
 		apf.write_buf_i16(range(100), 4)
 		end = time.time()
 		print("full request time : %f"%(end - start))
+	
+	def test4_autobaud(self):
+		apf = modbus()
+		baudrate = apf.autobaud()
+		if not baudrate:
+			print ("##########################Autobaud failed, try again")
+			baudrate = apf.autobaud()
+
+
+		print ("########### detected baurate = %d\n"%baudrate) 
+
 		
 # We need this to be able to run the tests outside a test framework.
 if __name__ == '__main__':
