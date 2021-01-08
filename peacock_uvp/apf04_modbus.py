@@ -12,17 +12,8 @@ from sys import platform
 import traceback
 import logging
 
-from .ap_exception import ap_hardware_error, ap_protocol_error
+from .apf04_exception import apf04_error
 from .modbus_crc import crc16
-
-# TODO 1 : mettre à jour, créer un apf04_exception ?
-#ap_hardware_error(3100, "No APF04 found.")
-#ap_hardware_error(3101, "Warning, undefined OS for USB port")
-#ap_hardware_error(3102, "Read_buf_i16 : read fail\n")
-#ap_hardware_error(3103, "Write_i16 : write FAIL\n")
-#ap_hardware_error(3104, "Write : FAIL\n")
-
-# TODO voir qui récupère les exception de hardware qui ne répond pas : à priori apf04_handler
 
 def hex_print (_bytes):
 	""" @brief print a byte array in hexadecimal string
@@ -31,17 +22,16 @@ def hex_print (_bytes):
 
 class Apf04Modbus ():
 	"""
-	@brief Gestion de la communication Modbus avec l'APF04
-	@param _baudrate : vitesse de communication, 57600 bits par seconde par defaut
-
-	_baudrate peut avoir pour valeur 230400 115200 57600 ...
-
+	@brief Modbus communication layer
+	
 	modbus est en big-endian (défaut)
 	l'adressage est fait en 16 bits.
 	"""
 	def __init__(self, _baudrate=None, _dev=None):
-		"""
-		@brief Initialisation de la couche communication de l'instrument
+		""" @brief Initialisation de la couche communication de l'instrument
+		@param _baudrate : vitesse de communication, 57600 bits par seconde par defaut
+
+		_baudrate peut avoir pour valeur 230400 115200 57600 ...
 		"""
 		# Default device address on modbus
 		self.apf04_addr = 0x04
@@ -52,8 +42,6 @@ class Apf04Modbus ():
 
 		logging.debug("Platform is %s", platform)
 
-		# TODO try / except serial.serialutil.SerialException : raise ap_hardware_error(...
-		# TODO: Mettre un try catch autour des tests if. Si usb_device n'est pas défini après, on quitte le process.
 		self.usb_device = _dev
 
 		if self.usb_device is None :
@@ -73,7 +61,7 @@ class Apf04Modbus ():
 
 			if self.usb_device is None : # usb device could not be detected
 				logging.critical("USB device cannot be detected automatically, check the wiring or specify the device port.")
-				raise
+				raise apf04_error (1000, "No device port defined.")
 
 		logging.debug("usb_device is at %s with baudrate %s"%(self.usb_device, _baudrate))
 		if _baudrate :
@@ -85,35 +73,40 @@ class Apf04Modbus ():
 		logging.debug("end init")
 
 	def connect (self, _baudrate):
-		# Create an instance of the Peacock's driver at a given baudrate
-		self.ser = serial.Serial(self.usb_device, _baudrate, timeout=2., \
-		           bytesize=8, parity='N', stopbits=1, xonxoff=0, rtscts=0)
+		try :
+			# Create an instance of the Peacock's driver at a given baudrate
+			self.ser = serial.Serial(self.usb_device, _baudrate, timeout=2., \
+					bytesize=8, parity='N', stopbits=1, xonxoff=0, rtscts=0)
+		except serial.serialutil.SerialException : 
+			raise apf04_error (1005, "Unable to connect to the device.")
 
 	def __del__(self):
-		# close serial port
+		""" @brief close serial port if necessary """
 		try : # au cas où le constructeur a planté
 			self.ser.close()
 		except :
 			pass
 
 	def set_timeout(self, _timeout):
+		""" @brief set the timeout of the serial connexion """
 		try :
 			logging.debug ("timeout is %s , set to %s"%(self.ser.timeout , _timeout))
 			# timeout pour la lecture des données :
 			self.ser.timeout = _timeout
-			logging.debug ("now timeout is %s"%(self.ser.timeout))
+
 		except serial.serialutil.SerialException:
 			self.log("hardware apparently disconnected")
-			#raise ap_hardware_error(3107, "FAIL to set timeout on modbus")
+			raise apf04_error(1107, "Fail to set timeout on modbus.")
 
 	def autobaud (self):
-		"""
+		""" @brief automatically detect the baudrate
 		@return baudrate if detected, None instead
 
-		WARNING : be carefull, this method is not robust, you may try several time 
+		If the baudrate is found, the connexion to the device is active
+		WARNING : be carefull, this method is not robust, you may try several times to get the baudrate 
 		"""
 		# Scan available baudrates for the Peacock UVP
-		for baudrate in [57600,230400,750000]:
+		for baudrate in [57600, 115200, 230400, 750000]:
 			try:
 				logging.debug("try if baudrate = %d"%baudrate)
 				self.connect(baudrate)
@@ -131,10 +124,11 @@ class Apf04Modbus ():
 		logging.debug("Fail to detect the baudrate automatically")
 		return None
 	
-	# @ verification de l'existance de la zone memoire
-	# @param _begin : addresse de début en octets
-	# @param _size : taille du bloc en mots (16 bits)
 	def __check_addr_range(self, _begin, _size):
+		""" @brief check if the address range is allowed
+		@param _begin : addresse de début en octets
+		@param _size : taille du bloc en mots (16 bits)
+		"""
 		addr_ram_begin =  0x0000
 		addr_ram_end =    0x07FF
 		addr_reg_action = 0xFFFD # also defined as ADDR_ACTION in apf04_addr_cmd.py
@@ -145,92 +139,103 @@ class Apf04Modbus ():
 			assert _begin!=addr_reg_action and _size!=1, "Warning, access at %d, size= %d bytes not allowed"%(_begin, _size)
 
 	def __read__(self, _size):
+		""" @brief Low level read method
+		@param _size number of bytes to read
+		"""
 		if _size == 0:
-			raise ap_protocol_error(23442, "ask to read null size data" )
+			raise apf04_error(2002, "ask to read null size data." )
 
 		try :
 			read_data = self.ser.read(_size)
 		except serial.serialutil.SerialException:
-			self.log("hardware apparently disconnected")
-			read_data = b''
-			#raise ap_hardware_error( ...
+			#self.log("hardware apparently disconnected")
+			#read_data = b''
+			raise apf04_error(1010, "Hardware apparently disconnected." )
 
 		if len (read_data) != _size :
 			if len (read_data) == 0:
 				logging.debug ("WARNING timeout, no answer from device")
-				raise ap_hardware_error(23443, "timeout : device do not answer (please check cable connexion or baudrate)" )
+				raise apf04_error(2003, "timeout : device do not answer (please check cable connexion or baudrate)" )
 			else :
 				logging.debug ("WARNING timeout, uncomplete answer from device (%d/%d)"%(len (read_data), _size))
-				raise ap_hardware_error(23444, "timeout : uncomplete answer from device (please check timeout or baudrate) (%d/%d)"%(len (read_data), _size))
+				raise apf04_error(2004, "timeout : uncomplete answer from device (please check timeout or baudrate) (%d/%d)"%(len (read_data), _size))
 		
 		return read_data
 
 
 	############## Read functions ###############################################
-	
-	# @brief fonction de lecture d'un mot de 16 bits signé
-	# @param _addr : adresse (en octet) du mot
-	# @return : entier signé
-	# les données sont transmises en big endian (octet de poids faible en premier)
+
 	def read_i16 (self, _addr):
+		""" @brief Read one word (signed 16 bits)
+		@param _addr : data address (given in bytes)
+		@return : integer
+		"""
+		# les données sont transmises en big endian (octet de poids faible en premier)
 		return struct.unpack(">h",self.read_seg_16(_addr , 1))[0]
 
+
 	def read_list_i16(self, _addr, _size):
+		""" @brief Read several words (signed 16 bits)
+		@param _addr : data address (given in bytes)
+		@param _size : number of word to read
+		@return : list of integers
+		"""
+		# TODO utiliser read_buf_i16
 		return struct.unpack(">%dh"%_size,self.read_seg_16(_addr , _size))
 
 
-	# @brief fonction de lecture de mots de 16 bits signés ou non-signé en RAM
-	# @param _addr : adresse (en octet) du premier mot à lire
-	# @param _size : taille en nombre de mots du bloc à lire
-	# les données sont transmises en big endian (octet de poids fort en premier)
+	# TODO mettre en private
 	def read_seg_16(self, _addr, _size):
+		""" @brief Low level read (in a single modbus frame)
+		@param _addr : data address (given in bytes)
+		@param _size : number of word to read
+		@return : byte array
+		"""
 		assert (_size <= self.max_seg_size)  # segment de 125 mots (max en lecture)
-		try:
-			logging.debug ("reading %d words at %d"%(_size, _addr))
-			# on utilise la fonction modbus 3 pour la lecture des octets
-			#self.__check_addr_range(_addr, 2 * _size)
+		
+		logging.debug ("reading %d words at %d"%(_size, _addr))
+		# on utilise la fonction modbus 3 pour la lecture des octets
+		#self.__check_addr_range(_addr, 2 * _size)
 
-			# request read 
-			read_query = struct.pack(">BBHh",self.apf04_addr, 0x03, _addr, _size )
-			read_query += struct.pack(">H",crc16 (read_query) )
-			#print ("read query = ")
-			#hex_print(read_query)
-			try :
-				self.ser.write(read_query)
-			except serial.serialutil.SerialException:
-				self.log("hardware apparently disconnected")
-				#raise ap_hardware_error( ...
+		# request read 
+		read_query = struct.pack(">BBHh",self.apf04_addr, 0x03, _addr, _size )
+		read_query += struct.pack(">H",crc16 (read_query) )
+		#print ("read query = ")
+		#hex_print(read_query)
+		try :
+			self.ser.write(read_query)
+		except serial.serialutil.SerialException:
+			#self.log("hardware apparently disconnected")
+			# TODO traiter les différentes erreurs, se mettre en 3 MBaud sur R0W (bcp de buffer overflow !)
+			raise apf04_error(1010, "Hardware apparently disconnected." )
 
-			# read answer
-			slave_response = self.__read__(3)
+		# read answer
+		slave_response = self.__read__(3)
 
-			if slave_response[1] != 3:
-				logging.info ("WARNING error while reading %s"%slave_response)
+		if slave_response[1] != 3:
+			logging.info ("WARNING error while reading %s"%slave_response)
 
-			slave_response += self.__read__(slave_response[2]+2)
+		slave_response += self.__read__(slave_response[2]+2)
 
-			#print ("slave answer = ")
-			#hex_print(slave_response)
+		#print ("slave answer = ")
+		#hex_print(slave_response)
 
-			# check crc
-			#print ("%X"%crc16 (slave_response[0:-2]))
-			#print ("%X"%struct.unpack(">H",slave_response[-2:]))
-			assert (crc16 (slave_response[0:-2]) == struct.unpack(">H",slave_response[-2:])[0])
-
-		except:
-			# TODO traiter les différentes erreurs, se mettre en 3 MBaud sur pi0W (bcp de buffer overflow !)
-			logging.info ("Read_buf_i16 : read fail\n")
-			raise # TODO define exception
+		# check crc
+		#print ("%X"%crc16 (slave_response[0:-2]))
+		#print ("%X"%struct.unpack(">H",slave_response[-2:]))
+		assert (crc16 (slave_response[0:-2]) == struct.unpack(">H",slave_response[-2:])[0])
 
 		return slave_response[3:-2]
 
 
-	# @brief fonction de lecture de mots de 16 bits signés en RAM
-	# @param _addr : adresse (en octet) du premier mot à lire
-	# @param _size : taille en nombre de mots du bloc à lire
-	# @return : liste des mots
-	# les données sont transmises en big endian (octet de poids faible en premier)
 	def read_buf_i16 (self, _addr , _size):
+		""" @brief Read buffer 
+		@param _addr : data address (given in bytes)
+		@param _size : number of word to read
+		@return : byte array
+
+		Note : data are transmitted in big endian
+		"""
 		data = b''
 		addr = _addr
 		remind = _size
@@ -250,27 +255,26 @@ class Apf04Modbus ():
 		return data
 
 
-
 	############## Write functions ##############################################
 
-
-	# @brief fonction d'écriture d'un mot 16 bit signé
-	# @param _value : valeur du mot à écrire
-	# @param _addr: adresse de destination du mot
 	def write_i16 (self, _value, _addr):
+		""" @brief Write one word (signed 16 bits)
+		@param _value : value of the word
+		@param _addr : destination data address (given in bytes)
+		"""
 		try:
 			self.write_buf_i16 ([_value], _addr)
 		except :
 			print(traceback.format_exc())
-			raise ap_hardware_error(3103, "Write_i16 : FAIL to write 0%04x at %d\n"%(_value, _addr))
+			raise apf04_error(3000, "write_i16 : FAIL to write 0%04x at %d\n"%(_value, _addr))
 
-	# @brief fonction d'écriture de mots de 16 bits signés (dans la RAM ou dans les registres)
-	# @param _data : données en liste (taille max de 123 mots)
-	# @param _addr : adresse (en octet) du premier mot à écrire
-	# 
-	# les données sont transmises en big endian (octet de poids faible en premier)
-	# ici on ne gère pas de boucle sur un "write_seg_16" car on n'a pas besoin d'écrire de gros blocs de données
+
 	def write_buf_i16 (self, _data, _addr):
+		""" @brief Write buffer 
+		@param _data : list of words (max size : 123 words)
+		@param _addr : data address (given in bytes)
+		"""
+		# ATTENTION ici on ne gère pas de boucle sur un "write_seg_16" car on n'a pas besoin d'écrire de gros blocs de données
 		# segmenter en blocs de 123 mots (max en ecriture)
 		assert (len(_data)<=self.max_seg_size)
 		try:
@@ -283,7 +287,7 @@ class Apf04Modbus ():
 				self.ser.write(write_query)
 			except serial.serialutil.SerialException:
 				self.log("hardware apparently disconnected")
-				#raise ap_hardware_error( ...
+				raise apf04_error(3004, "write_buf_i16 : hardware apparently disconnected")
 
 			# read answer
 			slave_response = self.__read__(2)
@@ -301,4 +305,4 @@ class Apf04Modbus ():
 
 		except :
 			print(traceback.format_exc())
-			raise #ap_hardware_error(3104, "Write : FAIL\n")
+			raise apf04_error(3001, "write_buf_i16 : Fail to write")
