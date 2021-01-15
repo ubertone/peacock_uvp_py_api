@@ -12,6 +12,7 @@ import json
 
 # import modules
 from peacock_uvp.apf04_driver import Apf04Driver
+from peacock_uvp.apf04_measures import extract_measures
 
 # The main test class
 class TestApf04Handler(unittest.TestCase):
@@ -72,7 +73,14 @@ class TestApf04Handler(unittest.TestCase):
 			#   when the data are ready
 			apf_instance.act_meas_profile(0.2 + 1.1*timeout)
 			# Read the profile data (velocities, echo amplitudes ...)
-			apf_instance.read_profile(config.n_vol)
+			raw_us_data = apf_instance.read_profile(config.n_vol)
+			us_data = extract_measures(raw_us_data, config)
+
+			print("time = ", us_data["timestamp"].strftime("%Y-%m-%dT%H:%M:%S.%f"))
+			print (us_data["amplitude"])
+			#print (us_data["snr"])
+
+
 		stopTs = time()
 		timeDiff = stopTs  - startTs
 		print ("for %d profiles : %f sec"%(count, timeDiff))

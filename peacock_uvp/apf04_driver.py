@@ -13,7 +13,7 @@ import logging
 from .apf04_modbus import Apf04Modbus
 from .apf04_addr_cmd import *
 from .apf04_config_hw import ConfigHw
-from .apf_timestamp import convert_timestamp
+from .apf_timestamp import encode_timestamp
 
 # TODO gérer ici les erreur spécifiques au HW
 
@@ -164,4 +164,4 @@ class Apf04Driver (Apf04Modbus):
 
 		logging.debug("processing+transfert+swap delay = %fs"%(datetime.utcnow()-self.timestamp_profile).total_seconds())
 
-		return convert_timestamp(self.timestamp_profile) + data_packed
+		return encode_timestamp(self.timestamp_profile) + data_packed
