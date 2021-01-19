@@ -1,14 +1,10 @@
 # -*- coding: UTF_8 -*-
 
-# @copyright  this code is the property of Ubertone.
-# You may use this code for your personal, informational, non-commercial purpose.
-# You may not distribute, transmit, display, reproduce, publish, license, create derivative works from, transfer or sell any information, software, products or services based on this code.
-
 import unittest
-# Add path to peacock_uvp_py_api folder for accessing to the modules
+# Add path to the lib folder
 import sys, os
-webui_path = os.path.abspath(__file__).split('/peacock_uvp_py_api')[0]+'/peacock_uvp_py_api'
-sys.path.insert(0, webui_path)
+lib_path = os.path.abspath(__file__).split('/peacock_uvp_py_api')[0]+'/peacock_uvp_py_api'
+sys.path.insert(0, lib_path)
 #-------------------------------------
 
 import time

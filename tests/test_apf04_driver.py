@@ -1,9 +1,9 @@
 # -*- coding: UTF_8 -*-
 import unittest
-# Add path to webui2 main folder for accessing to the modules
+# Add path to the lib folder
 import sys, os
-webui_path = os.path.abspath(__file__).split('/peacock_uvp_py_api')[0]+'/peacock_uvp_py_api'
-sys.path.insert(0, webui_path)
+lib_path = os.path.abspath(__file__).split('/peacock_uvp_py_api')[0]+'/peacock_uvp_py_api'
+sys.path.insert(0, lib_path)
 #-------------------------------------
 
 from time import sleep, time
@@ -77,7 +77,7 @@ class TestApf04Handler(unittest.TestCase):
 			us_data = extract_measures(raw_us_data, config)
 
 			print("time = ", us_data["timestamp"].strftime("%Y-%m-%dT%H:%M:%S.%f"))
-			print (us_data["amplitude"])
+			print (us_data["velocity"])
 			#print (us_data["snr"])
 
 
