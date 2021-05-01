@@ -11,6 +11,7 @@ import serial # Utilisé pour récuperer les donnée vennant de la liaison Séri
 from sys import platform
 import traceback
 import logging
+from time import time, sleep
 
 from .apf04_exception import apf04_error
 from .modbus_crc import crc16
@@ -66,16 +67,22 @@ class Apf04Modbus ():
 		if _baudrate :
 			self.connect(_baudrate)
 
-		# In order to reduce serial lattency of the linux driver, you may set the ASYNC_LOW_LATENCY flag :
+		# In order to reduce serial latency of the linux driver, you may set the ASYNC_LOW_LATENCY flag :
 		# setserial /dev/<tty_name> low_latency
+
+		self.mb_timeout = 2.0 # default modbus timeout set to 2 seconds
+
+		self.stop = False
 
 		logging.debug("end init")
 
 	def connect (self, _baudrate):
 		try :
 			# Create an instance of the Peacock's driver at a given baudrate
-			self.ser = serial.Serial(self.usb_device, _baudrate, timeout=2., \
+			self.ser = serial.Serial(self.usb_device, _baudrate, timeout=0.05, \
 					bytesize=8, parity='N', stopbits=1, xonxoff=0, rtscts=0)
+			# serial timeout is set to 50 ms. This can be changed by setting 
+			#   self.ser.timeout to balance between performance and efficiency
 		except serial.serialutil.SerialException : 
 			raise apf04_error (1005, "Unable to connect to the device.")
 
@@ -90,11 +97,11 @@ class Apf04Modbus ():
 		""" @brief set the timeout of the serial connexion """
 		try :
 			logging.debug ("timeout is %s , set to %s"%(self.ser.timeout , _timeout))
-			# timeout pour la lecture des données :
-			self.ser.timeout = _timeout
+			# timeout pour la lecture des données sur modbus :
+			self.mb_timeout = _timeout
 
 		except serial.serialutil.SerialException:
-			self.log("hardware apparently disconnected")
+			logging.error("hardware apparently disconnected")
 			raise apf04_error(1107, "Fail to set timeout on modbus.")
 
 	def autobaud (self):
@@ -137,7 +144,7 @@ class Apf04Modbus ():
 		if _begin>addr_ram_end:
 			assert _begin!=addr_reg_action and _size!=1, "Warning, access at %d, size= %d bytes not allowed"%(_begin, _size)
 
-	def __read__(self, _size):
+	def __read__(self, _size, _timeout=0.0):
 		""" @brief Low level read method
 		@param _size number of bytes to read
 		"""
@@ -145,20 +152,31 @@ class Apf04Modbus ():
 			raise apf04_error(2002, "ask to read null size data." )
 
 		try :
-			read_data = self.ser.read(_size)
+			read_data = b''
+			start_time = time()
+			while (not self.stop):
+				read_data += self.ser.read(_size)
+				if len (read_data) == _size or time() - start_time > _timeout:
+					break
+				else :
+					sleep(self.ser.timeout)
+
 		except serial.serialutil.SerialException:
 			#self.log("hardware apparently disconnected")
 			#read_data = b''
 			raise apf04_error(1010, "Hardware apparently disconnected." )
 
-		if len (read_data) != _size :
-			if len (read_data) == 0:
-				logging.debug ("WARNING timeout, no answer from device")
-				raise apf04_error(2003, "timeout : device do not answer (please check cable connexion or baudrate)" )
-			else :
-				logging.debug ("WARNING timeout, uncomplete answer from device (%d/%d)"%(len (read_data), _size))
-				raise apf04_error(2004, "timeout : uncomplete answer from device (please check timeout or baudrate) (%d/%d)"%(len (read_data), _size))
-		
+		if not self.stop :
+			if len (read_data) != _size :
+				if len (read_data) == 0:
+					logging.debug ("WARNING timeout, no answer from device")
+					raise apf04_error(2003, "timeout : device do not answer (please check cable connexion or baudrate)" )
+				else :
+					logging.debug ("WARNING, uncomplete answer from device (%d/%d)"%(len (read_data), _size))
+					raise apf04_error(2004, "uncomplete answer from device (please check timeout or baudrate) (%d/%d)"%(len (read_data), _size))
+		else : # read has been actively stopped
+			return b'' # TODO raise a specific exception ?
+
 		return read_data
 
 
@@ -256,19 +274,19 @@ class Apf04Modbus ():
 
 	############## Write functions ##############################################
 
-	def write_i16 (self, _value, _addr):
+	def write_i16 (self, _value, _addr, _timeout=0.0):
 		""" @brief Write one word (signed 16 bits)
 		@param _value : value of the word
 		@param _addr : destination data address (given in bytes)
 		"""
 		try:
-			self.write_buf_i16 ([_value], _addr)
+			self.write_buf_i16 ([_value], _addr, _timeout)
 		except :
 			print(traceback.format_exc())
 			raise apf04_error(3000, "write_i16 : FAIL to write 0%04x at %d\n"%(_value, _addr))
 
 
-	def write_buf_i16 (self, _data, _addr):
+	def write_buf_i16 (self, _data, _addr, _timeout=0.0):
 		""" @brief Write buffer 
 		@param _data : list of words (max size : 123 words)
 		@param _addr : data address (given in bytes)
@@ -285,11 +303,11 @@ class Apf04Modbus ():
 				#print (write_query)
 				self.ser.write(write_query)
 			except serial.serialutil.SerialException:
-				self.log("hardware apparently disconnected")
+				logging.error("hardware apparently disconnected")
 				raise apf04_error(3004, "write_buf_i16 : hardware apparently disconnected")
 
 			# read answer
-			slave_response = self.__read__(2)
+			slave_response = self.__read__(2, _timeout)
 			# TODO 1 : format de la trame d'erreur et codes d'erreurs effectivement traités
 			if slave_response[1] == 16 :
 				slave_response += self.__read__(6)

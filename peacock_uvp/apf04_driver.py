@@ -110,7 +110,8 @@ class Apf04Driver (Apf04Modbus):
 		self.write_i16(CMD_TEST_I2C, ADDR_ACTION)
 
 	def act_test_led (self):
-		self.write_i16(CMD_TEST_LED, ADDR_ACTION)
+		self.write_i16(CMD_TEST_LED, ADDR_ACTION, 1.5)
+		# timeout set to 1.5 seconds to let the Led blink
 		
 	def act_meas_IQ (self):
 		self.write_i16(CMD_PROFILE_IQ, ADDR_ACTION)
@@ -131,11 +132,11 @@ class Apf04Driver (Apf04Modbus):
 #			self.write_i16(CMD_PROFILE_NON_BLOCKING, ADDR_ACTION)
 #		else:            # mode bloquant
 		logging.debug ("setting timeout to %f"%_timeout)
-		self.set_timeout(_timeout)
+#		self.set_timeout(_timeout)
 		# TODO san 04/12/2019 voir pour travailler 
 		# en bloquant si < 2secondes ;  et non-bloquant + sleep au-delà (permet d'interrompre la mesure sur event stop à passer en argument)
 
-		self.write_i16(CMD_PROFILE_BLOCKING, ADDR_ACTION)
+		self.write_i16(CMD_PROFILE_BLOCKING, ADDR_ACTION, _timeout)
 		
 		
 	def act_check_config (self):
