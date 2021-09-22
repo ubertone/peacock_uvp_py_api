@@ -13,7 +13,7 @@ import traceback
 import logging
 from time import time, sleep
 
-from .apf04_exception import apf04_error
+from .apf04_exception import apf04_error, apf04_exception
 from .modbus_crc import crc16
 
 def hex_print (_bytes):
@@ -175,7 +175,7 @@ class Apf04Modbus ():
 					logging.debug ("WARNING, uncomplete answer from device (%d/%d)"%(len (read_data), _size))
 					raise apf04_error(2004, "uncomplete answer from device (please check timeout or baudrate) (%d/%d)"%(len (read_data), _size))
 		else : # read has been actively stopped
-			return b'' # TODO raise a specific exception ?
+			raise apf04_exception(1001, "Read actively stopped.")
 
 		return read_data
 
@@ -281,6 +281,8 @@ class Apf04Modbus ():
 		"""
 		try:
 			self.write_buf_i16 ([_value], _addr, _timeout)
+		except apf04_exception as ae:
+			raise ae # apf04_exception are simply raised upper
 		except :
 			print(traceback.format_exc())
 			raise apf04_error(3000, "write_i16 : FAIL to write 0%04x at %d\n"%(_value, _addr))
@@ -320,6 +322,8 @@ class Apf04Modbus ():
 				print("error while writting")
 				print (slave_response)
 
+		except apf04_exception as ae:
+			raise ae # apf04_exception are simply raised upper
 		except :
 			print(traceback.format_exc())
 			raise apf04_error(3001, "write_buf_i16 : Fail to write")
