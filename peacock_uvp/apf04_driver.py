@@ -66,22 +66,23 @@ class Apf04Driver (Apf04Modbus):
 		logging.debug("Version VHDL=%s", self.version_vhdl)
 		logging.debug("Version C=%s", self.version_c)
 		if self.version_c < 45:
-			print ("WARNING firmware version %d not supported (version 45 or higher required)" % self.version_c)
-		
-		model_year = self.read_i16(ADDR_MODEL_YEAR)
-		self.model = (model_year & 0xFF00)>>8
-		self.year = 2000 + (model_year & 0x00FF)
-
-		if self.model == 0x01 :
-			logging.debug("Model is Peacock UVP")
-		elif self.model == 0x20 : 
-			logging.debug("Model is an UB-Flow AV")
+			print ("WARNING firmware version %d do not provide noise measurements in profile's header" % self.version_c)
+			self.model = 0
+			self.year = 2018
+			self.serial_num = 0
 		else :
-			logging.info("Warning, model (id %s) is not defined"%self.model)	
-		logging.debug("Year of production = %s", self.year)
-		
-		self.serial_num = self.read_i16(ADDR_SERIAL_NUM)
-		logging.debug("Serial number=%s", self.serial_num)
+			model_year = self.read_i16(ADDR_MODEL_YEAR)
+			self.model = (model_year & 0xFF00)>>8
+			self.year = 2000 + (model_year & 0x00FF)
+
+			if self.model == 0x01 :
+				logging.debug("Model is Peacock UVP")
+			else :
+				logging.info("Warning, model (id %s) is not defined"%self.model)	
+			logging.debug("Year of production = %s", self.year)
+			
+			self.serial_num = self.read_i16(ADDR_SERIAL_NUM)
+			logging.debug("Serial number=%s", self.serial_num)
 		
 		return self.version_vhdl, self.version_c
 

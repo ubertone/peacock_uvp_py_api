@@ -8,7 +8,7 @@
 
 from math import pow
 
-APF04_RECEPTION_CHAIN_CONSTANT_GAIN = 11.72  # dB (component after DAC+LNA)
+APF04_RECEPTION_CHAIN_CONSTANT_GAIN = 11.72 # new 14.5  # dB (component after DAC+LNA)
 APF04_GAIN_CODE_RATIO = 4.029E-2  # in the chain AD5621 (DAC) + AD8331 (LNA - low noise amplifier), where DAC (12bits-->4096, 3.3V) and gain LNA (50dB/V).
 
 APF04_CODE_MAX_APPLIED = 1241

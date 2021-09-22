@@ -27,14 +27,17 @@ class TestApf04Handler(unittest.TestCase):
 			settings = json.loads(json_file.read())
 			print(settings)
 
-		# Create an instance of the Peacock's driver (with 230400/57600 BAUD rate)
-		apf_instance = Apf04Driver(230400, 18e6)
+		# Create an instance of the Peacock's driver (with 750000/230400/57600 BAUD rate)
+		apf_instance = Apf04Driver(230400, 36e6)
 		# Read the firmware version
 		apf_instance.read_version()
 
 		# Create ConfigHw instance with the first configuration (id = num1) 
 		config = apf_instance.new_config()
 		config.set(settings["configs"]["num1"])
+
+		#config["method"]+= 2048
+
 		config.print_config_hw()
 		print(config.to_dict(1480.0))
 		
