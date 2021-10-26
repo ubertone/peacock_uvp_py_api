@@ -126,6 +126,7 @@ class ConfigHw ():
 		# Pour retourner choisir le paramètres methode traitement, remplacer la dernière parenthèse par un 2 ou un 0.
 		if(self.gain_auto == True):
 			logging.debug("gain auto is set")
+			# +2048 pour activer l'I2C (pour firmware >C51)
 			self.method = cast_int16(512 + (cast_int16(self.static_echo_filter)<<8) + (cast_int16(self.phase_coding)<<2) + cast_int16(self.burst_mode) + (cast_int16(self.burst_mode)<<1))
 		else:
 			logging.debug("gain is set to manual")
