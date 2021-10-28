@@ -7,6 +7,7 @@
 # @author Marie Burckbuchler, Stéphane Fischer
 
 import logging
+from math import ceil
 
 from .apf04_gain import convert_dB_m2code, convert_code2dB_m, convert_code2dB, convert_dB2code, APF04_CODE_MAX_APPLIED
 #from .ap_exception import ap_protocol_error
@@ -89,8 +90,9 @@ class ConfigHw ():
 		r_vol1 = _sound_speed/(2.*f0)*self.c_vol1 + r_em/2.
 
 		self.c_dvol = cast_int16(2./_sound_speed * f0 *_config_dict['r_dvol'])
-		if self.c_dvol < 2: # constraint from APF04 hardware
-			self.c_dvol = cast_int16(2)
+		c_dvol_min =int(ceil(0.75e-6 * f0 + 1))
+		if self.c_dvol < c_dvol_min: # constraint from APF04 hardware
+			self.c_dvol = cast_int16(c_dvol_min)
 		r_dvol = _sound_speed/(2.*f0)*self.c_dvol
 		
 		self.gain_ca1 = cast_int16(convert_dB_m2code(_config_dict['gain_function']['a1'], r_dvol))

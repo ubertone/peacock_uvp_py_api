@@ -25,7 +25,8 @@ class TestApf04Handler(unittest.TestCase):
 		# Read settings file
 		with open(model_path+'/settings.json') as json_file:
 			settings = json.loads(json_file.read())
-			print(settings)
+			#print ("#### Settings from file :")
+			#print(json.dumps(settings, indent=4, sort_keys=True))
 
 		# Create an instance of the Peacock's driver (with 750000/230400/57600 BAUD rate)
 		apf_instance = Apf04Driver(230400, 36e6)
@@ -38,30 +39,35 @@ class TestApf04Handler(unittest.TestCase):
 
 		#config["method"]+= 2048
 
+		print ("#### Config in human readable format:")
+		print(json.dumps(config.to_dict(1480.0), indent=4, sort_keys=True))
+		print ("#### Config in hardware format:")
 		config.print_config_hw()
-		print(config.to_dict(1480.0))
 		
 
 		# Stop any current action (in case of)
 		apf_instance.act_stop()
 
 		# Load the first acoustic configuration into the device
-		print("write_config")
+		print("\n\nwrite_config ...")
 		apf_instance.write_config (config, 0)
 
 		# select the first acoustic configuration (active config)
-		print("select_config")
+		print("select_config ...")
 		apf_instance.select_config(0)
 		# check the parameters of the active configuration
-		print("check_config")
+		print("check_config ...\n\n")
 		apf_instance.act_check_config()
 
-		# Read the first acoustic configuration from the device
-		print(apf_instance.read_config(0).to_dict(1480.0))
+		# Read the first acoustic configuration back from the device 
+		print ("#### Checked config in human readable format:")
+		print(json.dumps(config.to_dict(1480.0), indent=4, sort_keys=True))
+		print ("#### Checked config in hardware format:")
+		config.print_config_hw()
 
 		# Set the sound speed of the liquid (no automatic sound speed 
 		#   calculation)
-		print("sound speed")
+		print("\n\nsound speed")
 		apf_instance.write_sound_speed(1480, False)
 		
 		# Get measurement duration in order to define the timeout 

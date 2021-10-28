@@ -48,12 +48,15 @@ class Apf04Modbus ():
 			# In case of a *nux system, we can find the port of the APF04 
 			# automatically thanks to the serial.tools.list_ports library 
 			# and knowing that the RS485 to USB adapter has PID:VID = 0403:6001
-			if platform in ["linux","linux2","darwin"]: # linux and Mac OS
+			if platform in ["linux","linux2","darwin","cygwin"]: # linux and Mac OS
 				import serial.tools.list_ports as lPort
 				reslt = lPort.comports()
 				for res in reslt:
 					if "0403:6001" in res[2] or "1A86:7523" in res[2]: # dongle USB avec et sans alim
 						logging.debug("APF04 detected on serial port: %s", res[2])
+						self.usb_device = res[0]
+					else :
+						logging.debug("unknown device detected on serial port: %s (the last found will be selected)"%(res))
 						self.usb_device = res[0]
 
 			# for platform == "cygwin" and "win32", the serial port should be modified manually: 
