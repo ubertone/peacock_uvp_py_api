@@ -24,7 +24,7 @@ class Apf04Driver (Apf04Modbus):
 	def __init__(self, _baudrate, _f_sys, _dev=None):
 		self.f_sys=_f_sys
 		Apf04Modbus.__init__(self, _baudrate, _dev)
-		self.read_version()
+		self.addr = get_addr_dict(self.read_version()[1])
 		
 
 	def new_config (self):

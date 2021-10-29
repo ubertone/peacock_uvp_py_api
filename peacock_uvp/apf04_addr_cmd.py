@@ -57,7 +57,7 @@ def get_addr_dict(version_c, addr_json=None):
 
     if addr_json:
         with open(addr_json) as json_file:
-	        return json.loads(json_file.read())
+	        addr_dict = json.loads(json_file.read())
     else:
         if version_c <= 52 and version_c >= 47:
             addr_json = "./addr_json_S-Firmware-47.json"
@@ -65,37 +65,49 @@ def get_addr_dict(version_c, addr_json=None):
             addr_json = "./addr_json_S-Firmware-"+str(version_c)+".json"
         if addr_json.split("/")[-1] in os.listdir("."):
             with open(addr_json) as json_file:
-                return json.loads(json_file.read())
+                addr_dict = json.loads(json_file.read())
         else:
             # TODO mb 20/10/2021 choisir si on veut mettre un comportement par défaut ou fonctionner par exception
             logging.debug("WARNING: Unknown Addresses for this S-Firmware version.")
-            return None
+            addr_dict = None
 
-ADDR_SOUND_SPEED_AUTO = 0x0004
-ADDR_SOUND_SPEED_SET  = 0x0005
+    # conversion of haxa strings to hexa number
+    if addr_dict:
+        for value in addr_dict.values():
+            if isinstance(value, str):
+                if "x" in value:
+                    value = int(value, 16)
+
+    return addr_dict
+
+# ===============================================
+# DESCRIPTION OF AVAILABLE ADDRESSES IN THE DICT:
+# ===============================================
+#ADDR_SOUND_SPEED_AUTO
+#ADDR_SOUND_SPEED_SET
 
 #Adresse contenant l'adresse de la configuration de séquencement ultrasons demandée par Modbus. Elle est suivie par les 3 config partagées avec Modbus.
-ADDR_CONFIG_ID = 0x0010
+#ADDR_CONFIG_ID
 #Adresse de départ de la zone contenant les config
-ADDR_CONFIG =    0x0011
+#ADDR_CONFIG
 #Décallage entre chaque config
-OFFSET_CONFIG = 20
-SIZE_CONFIG =   17
+#OFFSET_CONFIG
+#SIZE_CONFIG
 
 # ----- Mesures Sensors -----
 #Adresse du tanguage moyen mesuré (à destination du Modbus)
-ADDR_TANGAGE = 0x0058
+#ADDR_TANGAGE
 #Adresse du roulis moyen mesuré (à destination du Modbus)
-ADDR_ROULIS = 0x0059
+#ADDR_ROULIS
 #Adresse de la température moyenne mesurée (à destination du Modbus)
-ADDR_TEMP_MOY = 0x005A
+#ADDR_TEMP_MOY
 
 # ---- En-tête des profils ----
-ADDR_SOUND_SPEED = 0x005B
-ADDR_GAIN_CA0 = 0x005C
-ADDR_GAIN_CA1 = 0x005D
+#ADDR_SOUND_SPEED
+#ADDR_GAIN_CA0
+#ADDR_GAIN_CA1
 
 #Adresse des profils de vitesse et amplitude
-ADDR_PROFILE_HEADER = 0x0058 # adresse du tangage, 1er sensor
-SIZE_PROFILE_HEADER = 8
-ADDR_PROFILE_DATA = 0x0060 # le début des données
+#ADDR_PROFILE_HEADER # adresse du tangage, 1er sensor
+#SIZE_PROFILE_HEADER
+#ADDR_PROFILE_DATA # le début des données
