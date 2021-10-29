@@ -42,7 +42,7 @@ class Apf04Driver (Apf04Modbus):
 		self.config = ConfigHw(self.f_sys)
 		self.config.id_config = _id_config
 		#	tous les paramètres des settings sont en signé
-		self.config.from_list(self.read_list_i16(ADDR_CONFIG+_id_config*OFFSET_CONFIG, SIZE_CONFIG)) # en mots
+		self.config.from_list(self.read_list_i16(self.addr["ADDR_CONFIG"]+_id_config*self.addr["OFFSET_CONFIG"], self.addr["SIZE_CONFIG"])) # en mots
 		return self.config
 	
 	# TODO .to_list() à faire par l'appelant ? APF04Driver ne connait pas config_hw ou passer config_hw en self.config (actuellement au niveau au dessus) ?
@@ -52,13 +52,13 @@ class Apf04Driver (Apf04Modbus):
 		    @param _id_config : identifiant de la configuration [0..2]
 		"""
 		logging.debug("%s"%(_config.to_list()))
-		self.write_buf_i16(_config.to_list(), ADDR_CONFIG+_id_config*OFFSET_CONFIG)
+		self.write_buf_i16(_config.to_list(), self.addr["ADDR_CONFIG"]+_id_config*self.addr["OFFSET_CONFIG"])
 
 	# DEFINI LA CONFIG 0 UTILISEE PAR L'APPAREIL
 	# _config = [0..2]
 	def select_config (self, _id_config):
 		logging.debug("selecting config %d [0..N-1]"%(_id_config))
-		self.write_i16(_id_config, ADDR_CONFIG_ID)
+		self.write_i16(_id_config, self.addr["ADDR_CONFIG_ID"])
 
 	def read_version (self):
 		""" @brief Lecture des versions C et VHDL
@@ -90,8 +90,8 @@ class Apf04Driver (Apf04Modbus):
 	def write_sound_speed (self, sound_speed=1480, sound_speed_auto=False):
 		""" @brief Writing of the sound speed global parameter in RAM
 		"""
-		addr_ss_auto = ADDR_SOUND_SPEED_AUTO
-		addr_ss_set = ADDR_SOUND_SPEED_SET
+		addr_ss_auto = self.addr["ADDR_SOUND_SPEED_AUTO"]
+		addr_ss_set = self.addr["ADDR_SOUND_SPEED_SET"]
 		# fix for firmware prior to 45
 		if self.version_c < 45:
 			addr_ss_auto -= 2
@@ -147,17 +147,17 @@ class Apf04Driver (Apf04Modbus):
 		self.write_i16(CMD_START_AUTO, ADDR_ACTION)
 
 	def read_temp (self):
-		return self.read_i16(ADDR_TEMP_MOY)
+		return self.read_i16(self.addr["ADDR_TEMP_MOY"])
 
 	def read_pitch (self):
-		return self.read_i16(ADDR_TANGAGE)
+		return self.read_i16(self.addr["ADDR_TANGAGE"])
 		
 	def read_profile (self, _n_vol):
 		logging.debug("timestamp: %s"%self.timestamp_profile)
 
-		#logging.debug("pitch: %s, roll: %s,"%(self.read_i16(ADDR_TANGAGE), self.read_i16(ADDR_ROULIS)))
-		#logging.debug("pitch: %s, roll: %s, temps: %s, sound_speed: %s, ca0: %s, ca1: %s"%(self.read_i16(ADDR_TANGAGE), self.read_i16(ADDR_ROULIS), self.read_i16(ADDR_TEMP_MOY), self.read_i16(ADDR_SOUND_SPEED), self.read_i16(ADDR_GAIN_CA0), self.read_i16(ADDR_GAIN_CA1)))
-		data_list = self.read_buf_i16(ADDR_PROFILE_HEADER, SIZE_PROFILE_HEADER + _n_vol*4) 
+		#logging.debug("pitch: %s, roll: %s,"%(self.read_i16(self.addr["ADDR_TANGAGE"]), self.read_i16(self.addr["ADDR_ROULIS"])))
+		#logging.debug("pitch: %s, roll: %s, temps: %s, sound_speed: %s, ca0: %s, ca1: %s"%(self.read_i16(self.addr["ADDR_TANGAGE"]), self.read_i16(self.addr["ADDR_ROULIS"]), self.read_i16(self.addr["ADDR_TEMP_MOY"]), self.read_i16(self.addr["ADDR_SOUND_SPEED"]), self.read_i16(self.addr["ADDR_GAIN_CA0"]), self.read_i16(self.addr["ADDR_GAIN_CA1"])))
+		data_list = self.read_buf_i16(self.addr["ADDR_PROFILE_HEADER"], self.addr["SIZE_PROFILE_HEADER"] + _n_vol*4) 
 
 		logging.debug("processing+transfert delay = %fs"%(datetime.utcnow()-self.timestamp_profile).total_seconds())
 
