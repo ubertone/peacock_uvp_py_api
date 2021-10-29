@@ -144,6 +144,9 @@ class Apf04Driver (Apf04Modbus):
 	def act_start_auto_mode (self):
 		self.write_i16(CMD_START_AUTO, ADDR_ACTION)
 
+	def read_temp (self):
+		return self.read_i16(ADDR_TEMP_MOY)
+
 	def read_pitch (self):
 		return self.read_i16(ADDR_TANGAGE)
 		
