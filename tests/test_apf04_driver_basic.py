@@ -6,6 +6,9 @@ lib_path = os.path.abspath(__file__).split('/peacock_uvp_py_api')[0]+'/peacock_u
 sys.path.insert(0, lib_path)
 #-------------------------------------
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 # import modules
 from peacock_uvp.apf04_driver import Apf04Driver
 
