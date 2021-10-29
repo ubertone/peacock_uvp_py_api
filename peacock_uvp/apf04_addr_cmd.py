@@ -6,6 +6,9 @@
 # You may not distribute, transmit, display, reproduce, publish, license, create derivative works from, transfer or sell any information, software, products or services based on this code.
 # @author Stéphane Fischer
 
+import os
+import json
+import logging
 
 ## Adresses et commandes de l'APF04
 
@@ -32,12 +35,41 @@ CMD_TEST_LED = 190
 # numéro de commande pour une mesure de température + pitch + roll 
 CMD_TEST_I2C = 195 
 
+# ces 5 adresses sont considérées comme fixes et qui ne changeront jamais.
 ADDR_ACTION = 0xFFFD
 
-ADDR_VERSION_C    = 0x0000
+ADDR_VERSION_C    = 0x0000 # nécessaire pour pouvoir justement déterminer le dict des autres adresses
 ADDR_VERSION_VHDL = 0xFFFE
 ADDR_MODEL_YEAR   = 0x0001
 ADDR_SERIAL_NUM   = 0x0002
+
+def get_addr_dict(version_c, addr_json=None):
+    """
+    Gets the addresses in RAM given the firmware version.
+
+    Args:
+        version_c: two digits number version
+        addr_json: possible to give directly a json file
+
+    Returns:
+        Dictionnary with the addresses names as keys and addresses in hexa as values.
+    """
+
+    if addr_json:
+        with open(addr_json) as json_file:
+	        return json.loads(json_file.read())
+    else:
+        if version_c <= 52 and version_c >= 47:
+            addr_json = "./addr_json_S-Firmware-47.json"
+        else:
+            addr_json = "./addr_json_S-Firmware-"+str(version_c)+".json"
+        if addr_json.split("/")[-1] in os.listdir("."):
+            with open(addr_json) as json_file:
+                return json.loads(json_file.read())
+        else:
+            # TODO mb 20/10/2021 choisir si on veut mettre un comportement par défaut ou fonctionner par exception
+            logging.debug("WARNING: Unknown Addresses for this S-Firmware version.")
+            return None
 
 ADDR_SOUND_SPEED_AUTO = 0x0004
 ADDR_SOUND_SPEED_SET  = 0x0005

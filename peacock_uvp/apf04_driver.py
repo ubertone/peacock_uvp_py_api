@@ -24,6 +24,8 @@ class Apf04Driver (Apf04Modbus):
 	def __init__(self, _baudrate, _f_sys, _dev=None):
 		self.f_sys=_f_sys
 		Apf04Modbus.__init__(self, _baudrate, _dev)
+		self.read_version()
+		
 
 	def new_config (self):
 		"""  @brief create an empty config
