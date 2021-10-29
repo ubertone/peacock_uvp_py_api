@@ -51,7 +51,8 @@ class Apf04Modbus ():
 				import serial.tools.list_ports as lPort
 				reslt = lPort.comports()
 				for res in reslt:
-					if "0403:6001" in res[2] or "1A86:7523" in res[2]: # dongle USB avec et sans alim
+					print(res[0], res[2])
+					if "0403:6001" in res[2] or "1A86:7523" in res[2] or "1486:5523" in res[2] or "1A86:5523" in res[2]: # dongle USB avec et sans alim
 						logging.debug("APF04 detected on serial port: %s", res[2])
 						self.usb_device = res[0]
 
