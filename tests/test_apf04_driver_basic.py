@@ -9,12 +9,14 @@ sys.path.insert(0, lib_path)
 # import modules
 from peacock_uvp.apf04_driver import Apf04Driver
 
+
 # The main test class
 class TestApf04Driver(unittest.TestCase):
 
 	def test_basic_behavior(self):
 		# Create an instance of the Peacock's driver (with 230400/57600  BAUD rate)
-		apf_instance = Apf04Driver(230400, 18e6)
+		apf_instance = Apf04Driver(750000, 36e6)
+		#apf_instance = Apf04Driver(230400, 18e6)
 
 		# Read the firmware version
 		vhdl_v, c_v = apf_instance.read_version()

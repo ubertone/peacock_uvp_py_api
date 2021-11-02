@@ -9,6 +9,7 @@
 import os
 import json
 import logging
+logging.basicConfig(level=logging.DEBUG)
 
 ## Adresses et commandes de l'APF04
 
@@ -60,23 +61,29 @@ def get_addr_dict(version_c, addr_json=None):
 	        addr_dict = json.loads(json_file.read())
     else:
         if version_c <= 52 and version_c >= 47:
-            addr_json = "./addr_json_S-Firmware-47.json"
+            addr_json = os.path.abspath(__file__).split('/peacock_uvp_py_api')[0] + "/peacock_uvp_py_api/peacock_uvp/addr_S-Firmware-47.json"
         else:
-            addr_json = "./addr_json_S-Firmware-"+str(version_c)+".json"
-        if addr_json.split("/")[-1] in os.listdir("."):
+            addr_json = os.path.abspath(__file__).split('/peacock_uvp_py_api')[0] + "/peacock_uvp_py_api/peacock_uvp/addr_S-Firmware-"+str(version_c)+".json"
+        if addr_json.split("/")[-1] in os.listdir(os.path.abspath(__file__).split('/peacock_uvp_py_api')[0] + "/peacock_uvp_py_api/peacock_uvp/"):
             with open(addr_json) as json_file:
                 addr_dict = json.loads(json_file.read())
         else:
             # TODO mb 20/10/2021 choisir si on veut mettre un comportement par défaut ou fonctionner par exception
             logging.debug("WARNING: Unknown Addresses for this S-Firmware version.")
             addr_dict = None
+    
+    logging.debug(os.listdir("."))
+    logging.debug("addr json: ", addr_json)
+    logging.debug("addr dict: ", addr_dict)
 
     # conversion of haxa strings to hexa number
     if addr_dict:
-        for value in addr_dict.values():
+        for key,value in addr_dict.items():
             if isinstance(value, str):
                 if "x" in value:
-                    value = int(value, 16)
+                    addr_dict |= {key:int(value, 16)}
+
+    logging.debug("addr dict converted: ", addr_dict)
 
     return addr_dict
 

@@ -24,6 +24,7 @@ class Apf04Driver (Apf04Modbus):
 	def __init__(self, _baudrate, _f_sys, _dev=None):
 		self.f_sys=_f_sys
 		Apf04Modbus.__init__(self, _baudrate, _dev)
+		print(self.read_version()[1])
 		self.addr = get_addr_dict(self.read_version()[1])
 		
 
@@ -42,7 +43,7 @@ class Apf04Driver (Apf04Modbus):
 		self.config = ConfigHw(self.f_sys)
 		self.config.id_config = _id_config
 		#	tous les paramètres des settings sont en signé
-		self.config.from_list(self.read_list_i16(self.addr["ADDR_CONFIG"]+_id_config*self.addr["OFFSET_CONFIG"], self.addr["SIZE_CONFIG"])) # en mots
+		self.config.from_list(self.read_list_i16(int(self.addr["ADDR_CONFIG"])+_id_config*int(self.addr["OFFSET_CONFIG"]), int(self.addr["SIZE_CONFIG"]))) # en mots
 		return self.config
 	
 	# TODO .to_list() à faire par l'appelant ? APF04Driver ne connait pas config_hw ou passer config_hw en self.config (actuellement au niveau au dessus) ?
