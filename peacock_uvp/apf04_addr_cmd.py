@@ -61,10 +61,10 @@ def get_addr_dict(version_c, addr_json=None):
 	        addr_dict = json.loads(json_file.read())
     else:
         if version_c <= 52 and version_c >= 47:
-            addr_json = os.path.abspath(__file__).split('/peacock_uvp_py_api')[0] + "/peacock_uvp_py_api/peacock_uvp/addr_S-Firmware-47.json"
+            addr_json = os.path.abspath(__file__).split('/peacock_uvp/')[0] + "/peacock_uvp/addr_S-Firmware-47.json"
         else:
-            addr_json = os.path.abspath(__file__).split('/peacock_uvp_py_api')[0] + "/peacock_uvp_py_api/peacock_uvp/addr_S-Firmware-"+str(version_c)+".json"
-        if addr_json.split("/")[-1] in os.listdir(os.path.abspath(__file__).split('/peacock_uvp_py_api')[0] + "/peacock_uvp_py_api/peacock_uvp/"):
+            addr_json = os.path.abspath(__file__).split('/peacock_uvp/')[0] + "/peacock_uvp/addr_S-Firmware-"+str(version_c)+".json"
+        if addr_json.split("/")[-1] in os.listdir(os.path.abspath(__file__).split('/peacock_uvp')[0] + "/peacock_uvp/"):
             with open(addr_json) as json_file:
                 addr_dict = json.loads(json_file.read())
         else:
@@ -73,8 +73,8 @@ def get_addr_dict(version_c, addr_json=None):
             addr_dict = None
     
     logging.debug(os.listdir("."))
-    logging.debug("addr json: ", addr_json)
-    logging.debug("addr dict: ", addr_dict)
+    logging.debug("addr json: %s"%addr_json)
+    logging.debug("addr dict: %s"%addr_dict)
 
     # conversion of haxa strings to hexa number
     if addr_dict:
@@ -83,7 +83,7 @@ def get_addr_dict(version_c, addr_json=None):
                 if "x" in value:
                     addr_dict |= {key:int(value, 16)}
 
-    logging.debug("addr dict converted: ", addr_dict)
+    logging.debug("addr dict converted: %s"%addr_dict)
 
     return addr_dict
 

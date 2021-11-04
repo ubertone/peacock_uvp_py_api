@@ -24,7 +24,6 @@ class Apf04Driver (Apf04Modbus):
 	def __init__(self, _baudrate, _f_sys, _dev=None):
 		self.f_sys=_f_sys
 		Apf04Modbus.__init__(self, _baudrate, _dev)
-		print(self.read_version()[1])
 		self.addr = get_addr_dict(self.read_version()[1])
 		
 
@@ -152,7 +151,10 @@ class Apf04Driver (Apf04Modbus):
 
 	def read_pitch (self):
 		return self.read_i16(self.addr["ADDR_TANGAGE"])
-		
+
+	def read_roll (self):
+		return self.read_i16(self.addr["ADDR_ROULIS"])	
+
 	def read_profile (self, _n_vol):
 		logging.debug("timestamp: %s"%self.timestamp_profile)
 
