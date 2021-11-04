@@ -22,6 +22,7 @@ class apf04_error (apf04_base_exception):
 	def __str__(self):
 		return "apf04_error %d : %s"%(self.code, self.message)
 
+# pas utilisé pour l'instant :
 class apf04_protocol_error (apf04_base_exception):
 	def __str__(self):
 		return "apf04_protocol_error %d : %s"%(self.code, self.message)

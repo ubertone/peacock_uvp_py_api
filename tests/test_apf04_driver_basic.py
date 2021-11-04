@@ -6,6 +6,9 @@ lib_path = os.path.abspath(__file__).split('/peacock_uvp_py_api')[0]+'/peacock_u
 sys.path.insert(0, lib_path)
 #-------------------------------------
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 # import modules
 from peacock_uvp.apf04_driver import Apf04Driver
 
@@ -37,6 +40,7 @@ class TestApf04Driver(unittest.TestCase):
 
 		print (" *************  Test Read / Write *****************")
 		# Basic memory read / writ operations
+		apf_instance.set_timeout(4)
 		apf_instance.write_buf_i16(range(60), 4)
 		echo_data = apf_instance.read_buf_i16(4, 60)
 		print (echo_data)
