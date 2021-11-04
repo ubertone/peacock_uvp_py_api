@@ -64,7 +64,7 @@ def get_addr_dict(version_c, addr_json=None):
             addr_json = os.path.abspath(__file__).split('/peacock_uvp/')[0] + "/peacock_uvp/addr_S-Firmware-47.json"
         else:
             addr_json = os.path.abspath(__file__).split('/peacock_uvp/')[0] + "/peacock_uvp/addr_S-Firmware-"+str(version_c)+".json"
-        if addr_json.split("/")[-1] in os.listdir(os.path.abspath(__file__).split('/peacock_uvp')[0] + "/peacock_uvp/"):
+        if addr_json.split("/")[-1] in os.listdir(os.path.abspath(__file__).split('/peacock_uvp/')[0] + "/peacock_uvp/"):
             with open(addr_json) as json_file:
                 addr_dict = json.loads(json_file.read())
         else:
