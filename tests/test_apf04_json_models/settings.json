@@ -9,7 +9,27 @@
             },
             "method": "ppc_cont",
             "n_ech": 50,
-            "n_profile": 3,
+            "n_profile": 1,
+            "n_vol": 120,
+            "phase_coding": true,
+            "prf": 1000.0,
+            "r_dvol": 0.00525,
+            "r_em": 0.00525,
+            "r_vol1": 0.019875,
+            "static_echo_filter": true,
+            "tr_out": "tr1",
+            "v_min": -0.06701762417029068
+        },
+        "num8": {
+            "f0": 1000000.0,
+            "gain_function": {
+                "a0": 19.97945,
+                "a1": 0.0,
+                "auto": true
+            },
+            "method": "ppc_cont",
+            "n_ech": 50,
+            "n_profile": 1,
             "n_vol": 120,
             "phase_coding": true,
             "prf": 1000.0,

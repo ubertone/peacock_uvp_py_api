@@ -324,7 +324,7 @@ class Apf04Modbus ():
 				size = struct.unpack("B",self.__read__(1))[0]
 				print ("size following : %d"%size)
 				self.__read__(size)
-				print("error while writting")
+				print("error while writing")
 				print (slave_response)
 
 		except apf04_exception as ae:

@@ -82,19 +82,35 @@ def conversion_profile(data_dict, sound_speed, n_vol, n_avg, c_prf, gain_ca0, ga
 	# print("factor code to velocity %f"%fact_code2velocity)
 	tab_gain = calc_gain(n_vol, gain_ca0, gain_ca1, blind_ca0, blind_ca1)
 	for i in range(n_vol):
-		if data_dict['std'][i] < 0:
-			ny_jump.append(True)
-			data_dict['std'][i] *= -1
+		# Velocity standard deviation
+		if data_dict['std'][i] == -32768:
+			data_dict['std'][i] = None
 		else:
-			ny_jump.append(False)
+			if data_dict['std'][i] < 0:
+				ny_jump.append(True)
+				data_dict['std'][i] *= -1
+			else:
+				ny_jump.append(False)
+			data_dict['std'][i] = data_dict['std'][i]*fact_code2velocity
+
+		# Velocity
+		if data_dict['velocity'][i] == -32768:
+			data_dict['velocity'][i] = None
+		else:
+			data_dict['velocity'][i] *= fact_code2velocity
+
+		# SNR Doppler
+		if data_dict['snr'][i] == -32768:
+			data_dict['snr'][i] = None
+		else:
+			data_dict['snr'][i] /= 10.
+		
+		# Echo amplitude
 		if data_dict['amplitude'][i] < 0:
 			sat.append(True)
 			data_dict['amplitude'][i] *= -1
 		else:
 			sat.append(False)
-		data_dict['std'][i] = data_dict['std'][i]*fact_code2velocity
-		data_dict['velocity'][i] *= fact_code2velocity
-		data_dict['snr'][i] /= 10.
 		data_dict['amplitude'][i] *= ((v_ref*2)/4096) / sqrt(n_avg) / tab_gain[i]
 
 def conversion_scalar(data_dict):
