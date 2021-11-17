@@ -10,10 +10,16 @@ from datetime import datetime
 import struct
 import logging
 
+
+
 from .apf04_modbus import Apf04Modbus
 from .apf04_addr_cmd import *
 from .apf04_config_hw import ConfigHw
 from .apf_timestamp import encode_timestamp
+from .apf04_exception import apf04_exception
+
+
+
 
 # TODO gérer ici les erreur spécifiques au HW
 
@@ -102,20 +108,31 @@ class Apf04Driver (Apf04Modbus):
 			self.write_i16(0, addr_ss_auto)
 			self.write_i16(sound_speed, addr_ss_set)
 
+	def __action_cmd__(self, _cmd, _timeout=0.0):
+		""" @brief generic action function 
+		send a command asking for a given action. Unless specific case,
+		the function is released when the action is finished. The timeout 
+		should be set consequently. """
+		try:
+			self.write_i16(_cmd, ADDR_ACTION, _timeout)
+		except apf04_exception as ae:
+			logging.info("apf04_exception catched with command %s with timeout %e"%(_cmd, _timeout))
+			raise ae
+
 	def act_stop (self):
-		self.write_i16(CMD_STOP, ADDR_ACTION)
+		self.__action_cmd__(CMD_STOP, 5.0)
 
 	def act_meas_I2C (self):
 		""" @brief Make one measure of pitch, roll and temp. Those values are then updated in the RAM.
 		"""
-		self.write_i16(CMD_TEST_I2C, ADDR_ACTION)
+		self.__action_cmd__(CMD_TEST_I2C, 2.0)
 
 	def act_test_led (self):
-		self.write_i16(CMD_TEST_LED, ADDR_ACTION, 1.5)
+		self.__action_cmd__(CMD_TEST_LED, 1.5)
 		# timeout set to 1.5 seconds to let the Led blink
 		
 	def act_meas_IQ (self):
-		self.write_i16(CMD_PROFILE_IQ, ADDR_ACTION)
+		self.__action_cmd__(CMD_PROFILE_IQ) # TODO timeout
 		
 	def act_meas_profile (self, _timeout=0.):
 		""" @brief démarrage d'une mesure de profil
@@ -137,14 +154,14 @@ class Apf04Driver (Apf04Modbus):
 		# TODO san 04/12/2019 voir pour travailler 
 		# en bloquant si < 2secondes ;  et non-bloquant + sleep au-delà (permet d'interrompre la mesure sur event stop à passer en argument)
 
-		self.write_i16(CMD_PROFILE_BLOCKING, ADDR_ACTION, _timeout)
+		self.__action_cmd__(CMD_PROFILE_BLOCKING, _timeout)
 		
 		
 	def act_check_config (self):
-		self.write_i16(CMD_CHECK_CONFIG, ADDR_ACTION)
+		self.__action_cmd__(CMD_CHECK_CONFIG, 0.2)
 
 	def act_start_auto_mode (self):
-		self.write_i16(CMD_START_AUTO, ADDR_ACTION)
+		self.__action_cmd__(CMD_START_AUTO) # TODO timeout
 
 	def read_temp (self):
 		return self.read_i16(ADDR_TEMP_MOY)

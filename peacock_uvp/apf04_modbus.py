@@ -75,7 +75,7 @@ class Apf04Modbus ():
 		# In order to reduce serial latency of the linux driver, you may set the ASYNC_LOW_LATENCY flag :
 		# setserial /dev/<tty_name> low_latency
 
-		self.mb_timeout = 2.0 # default modbus timeout set to 2 seconds
+		#self.mb_timeout = 2.0 # default modbus timeout set to 2 seconds
 
 		self.stop = False
 
@@ -84,7 +84,7 @@ class Apf04Modbus ():
 	def connect (self, _baudrate):
 		try :
 			# Create an instance of the Peacock's driver at a given baudrate
-			self.ser = serial.Serial(self.usb_device, _baudrate, timeout=0.05, \
+			self.ser = serial.Serial(self.usb_device, _baudrate, timeout=0.5, \
 					bytesize=8, parity='N', stopbits=1, xonxoff=0, rtscts=0)
 			# serial timeout is set to 50 ms. This can be changed by setting 
 			#   self.ser.timeout to balance between performance and efficiency
@@ -103,7 +103,7 @@ class Apf04Modbus ():
 		try :
 			logging.debug ("timeout is %s , set to %s"%(self.ser.timeout , _timeout))
 			# timeout pour la lecture des données sur modbus :
-			self.mb_timeout = _timeout
+			self.ser.timeout
 
 		except serial.serialutil.SerialException:
 			logging.error("hardware apparently disconnected")
@@ -159,12 +159,11 @@ class Apf04Modbus ():
 		try :
 			read_data = b''
 			start_time = time()
+			# the read in blocking mode should be interuptible
 			while (not self.stop):
 				read_data += self.ser.read(_size)
 				if len (read_data) == _size or time() - start_time > _timeout:
 					break
-				else :
-					sleep(self.ser.timeout)
 
 		except serial.serialutil.SerialException:
 			#self.log("hardware apparently disconnected")
@@ -175,10 +174,10 @@ class Apf04Modbus ():
 			if len (read_data) != _size :
 				if len (read_data) == 0:
 					logging.debug ("WARNING timeout, no answer from device")
-					raise apf04_error(2003, "timeout : device do not answer (please check cable connexion or baudrate)" )
+					raise apf04_exception(2003, "timeout : device do not answer (please check cable connexion, timeout or baudrate)" )
 				else :
 					logging.debug ("WARNING, uncomplete answer from device (%d/%d)"%(len (read_data), _size))
-					raise apf04_error(2004, "uncomplete answer from device (please check timeout or baudrate) (%d/%d)"%(len (read_data), _size))
+					raise apf04_exception(2004, "timeout : uncomplete answer from device (please check timeout or baudrate) (%d/%d)"%(len (read_data), _size))
 		else : # read has been actively stopped
 			raise apf04_exception(1001, "Read actively stopped.")
 
