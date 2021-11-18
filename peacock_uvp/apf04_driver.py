@@ -10,16 +10,11 @@ from datetime import datetime
 import struct
 import logging
 
-
-
 from .apf04_modbus import Apf04Modbus
 from .apf04_addr_cmd import *
 from .apf04_config_hw import ConfigHw
 from .apf_timestamp import encode_timestamp
 from .apf04_exception import apf04_exception
-
-
-
 
 # TODO gérer ici les erreur spécifiques au HW
 
@@ -120,6 +115,7 @@ class Apf04Driver (Apf04Modbus):
 			raise ae
 
 	def act_stop (self):
+		""" @brief Stop the measurement (only in non blocking mode)"""
 		self.__action_cmd__(CMD_STOP, 5.0)
 
 	def act_meas_I2C (self):
@@ -135,25 +131,13 @@ class Apf04Driver (Apf04Modbus):
 		self.__action_cmd__(CMD_PROFILE_IQ) # TODO timeout
 		
 	def act_meas_profile (self, _timeout=0.):
-		""" @brief démarrage d'une mesure de profil
-		    @param _timeout timeout permettant également de choisir entre mode bloquant (avec timeout) et non-bloquant (timeout à zéro)
-
-				en mode bloquant, la fonction rend la main lorsque la mesure est terminée. Les données sont alors immédiatement disponibles.
-				en mode non-bloquant, la fonction rend la main immédiatement. L'appelant devra surveiller le header du profil : 
-					lorsque le champ "sound_speed" n'est pas nul, le profil est disponible.
+		""" @brief start to measure a block of profils
+		    @param _timeout maximum delay to get an answer from the board 
 		"""
 		# get UTC timestamp just before strating the measurements
 		self.timestamp_profile = datetime.utcnow()
 
-#		if _timeout==0.: # mode non bloquant
-#			self.set_timeout(0.1)
-#			self.write_i16(CMD_PROFILE_NON_BLOCKING, ADDR_ACTION)
-#		else:            # mode bloquant
 		logging.debug ("setting timeout to %f"%_timeout)
-#		self.set_timeout(_timeout)
-		# TODO san 04/12/2019 voir pour travailler 
-		# en bloquant si < 2secondes ;  et non-bloquant + sleep au-delà (permet d'interrompre la mesure sur event stop à passer en argument)
-
 		self.__action_cmd__(CMD_PROFILE_BLOCKING, _timeout)
 		
 		
