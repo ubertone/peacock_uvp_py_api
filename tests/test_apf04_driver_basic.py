@@ -40,8 +40,7 @@ class TestApf04Driver(unittest.TestCase):
 
 		print (" *************  Test Read / Write *****************")
 		# Basic memory read / writ operations
-		apf_instance.set_timeout(4)
-		apf_instance.write_buf_i16(range(60), 4)
+		apf_instance.write_buf_i16(range(60), 4, 4.0)
 		echo_data = apf_instance.read_buf_i16(4, 60)
 		print (echo_data)
 			
