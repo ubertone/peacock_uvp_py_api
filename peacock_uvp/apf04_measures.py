@@ -117,9 +117,9 @@ def conversion_us_scalar(self, data_dict, n_avg, r_dvol, r_vol1):
 	# convert coded noise values to V
 	v_ref = 1.25
 	gain = pow(10, ((_convert_code2dB_trunc(1241)) / 20.)) # gain max
-	data_dict["noise_g_high"] = data_dict["noise_g_max"] * ((v_ref*2)/4096) / sqrt(n_avg) / gain
+	data_dict["noise_g_high"] = sqrt(data_dict["noise_g_max"]) * ((v_ref*2)/4096) / sqrt(n_avg) / gain
 	del data_dict["noise_g_max"]
 
 	gain = pow(10, ((_convert_code2dB_trunc(993)) / 20.)) # gain max - 10dB
-	data_dict["noise_g_low"] = data_dict["noise_g_mid"] * ((v_ref*2)/4096) / sqrt(n_avg) / gain
+	data_dict["noise_g_low"] = sqrt(data_dict["noise_g_mid"]) * ((v_ref*2)/4096) / sqrt(n_avg) / gain
 	del data_dict["noise_g_mid"]
