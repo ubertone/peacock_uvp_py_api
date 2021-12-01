@@ -14,6 +14,7 @@ from .apf04_modbus import Apf04Modbus
 from .apf04_addr_cmd import *
 from .apf04_config_hw import ConfigHw
 from .apf_timestamp import encode_timestamp
+from .apf04_exception import apf04_exception
 
 # TODO gérer ici les erreur spécifiques au HW
 
@@ -66,22 +67,23 @@ class Apf04Driver (Apf04Modbus):
 		logging.debug("Version VHDL=%s", self.version_vhdl)
 		logging.debug("Version C=%s", self.version_c)
 		if self.version_c < 45:
-			print ("WARNING firmware version %d not supported (version 45 or higher required)" % self.version_c)
-		
-		model_year = self.read_i16(ADDR_MODEL_YEAR)
-		self.model = (model_year & 0xFF00)>>8
-		self.year = 2000 + (model_year & 0x00FF)
-
-		if self.model == 0x01 :
-			logging.debug("Model is Peacock UVP")
-		elif self.model == 0x20 : 
-			logging.debug("Model is an UB-Flow AV")
+			print ("WARNING firmware version %d do not provide noise measurements in profile's header" % self.version_c)
+			self.model = 0
+			self.year = 2018
+			self.serial_num = 0
 		else :
-			logging.info("Warning, model (id %s) is not defined"%self.model)	
-		logging.debug("Year of production = %s", self.year)
-		
-		self.serial_num = self.read_i16(ADDR_SERIAL_NUM)
-		logging.debug("Serial number=%s", self.serial_num)
+			model_year = self.read_i16(ADDR_MODEL_YEAR)
+			self.model = (model_year & 0xFF00)>>8
+			self.year = 2000 + (model_year & 0x00FF)
+
+			if self.model == 0x01 :
+				logging.debug("Model is Peacock UVP")
+			else :
+				logging.info("Warning, model (id %s) is not defined"%self.model)	
+			logging.debug("Year of production = %s", self.year)
+			
+			self.serial_num = self.read_i16(ADDR_SERIAL_NUM)
+			logging.debug("Serial number=%s", self.serial_num)
 		
 		return self.version_vhdl, self.version_c
 
@@ -101,48 +103,52 @@ class Apf04Driver (Apf04Modbus):
 			self.write_i16(0, addr_ss_auto)
 			self.write_i16(sound_speed, addr_ss_set)
 
+	def __action_cmd__(self, _cmd, _timeout=0.0):
+		""" @brief generic action function 
+		send a command asking for a given action. Unless specific case,
+		the function is released when the action is finished. The timeout 
+		should be set consequently. """
+		try:
+			self.write_i16(_cmd, ADDR_ACTION, _timeout)
+		except apf04_exception as ae:
+			logging.info("apf04_exception catched with command %s with timeout %e"%(_cmd, _timeout))
+			raise ae
+
 	def act_stop (self):
-		self.write_i16(CMD_STOP, ADDR_ACTION)
+		""" @brief Stop the measurement (only in non blocking mode)"""
+		self.__action_cmd__(CMD_STOP, 5.0)
 
 	def act_meas_I2C (self):
 		""" @brief Make one measure of pitch, roll and temp. Those values are then updated in the RAM.
 		"""
-		self.write_i16(CMD_TEST_I2C, ADDR_ACTION)
+		self.__action_cmd__(CMD_TEST_I2C, 2.0)
 
 	def act_test_led (self):
-		self.write_i16(CMD_TEST_LED, ADDR_ACTION)
+		self.__action_cmd__(CMD_TEST_LED, 1.5)
+		# timeout set to 1.5 seconds to let the Led blink
 		
 	def act_meas_IQ (self):
-		self.write_i16(CMD_PROFILE_IQ, ADDR_ACTION)
+		self.__action_cmd__(CMD_PROFILE_IQ) # TODO timeout
 		
 	def act_meas_profile (self, _timeout=0.):
-		""" @brief démarrage d'une mesure de profil
-		    @param _timeout timeout permettant également de choisir entre mode bloquant (avec timeout) et non-bloquant (timeout à zéro)
-
-				en mode bloquant, la fonction rend la main lorsque la mesure est terminée. Les données sont alors immédiatement disponibles.
-				en mode non-bloquant, la fonction rend la main immédiatement. L'appelant devra surveiller le header du profil : 
-					lorsque le champ "sound_speed" n'est pas nul, le profil est disponible.
+		""" @brief start to measure a block of profils
+		    @param _timeout maximum delay to get an answer from the board 
 		"""
 		# get UTC timestamp just before strating the measurements
 		self.timestamp_profile = datetime.utcnow()
 
-#		if _timeout==0.: # mode non bloquant
-#			self.set_timeout(0.1)
-#			self.write_i16(CMD_PROFILE_NON_BLOCKING, ADDR_ACTION)
-#		else:            # mode bloquant
 		logging.debug ("setting timeout to %f"%_timeout)
-		self.set_timeout(_timeout)
-		# TODO san 04/12/2019 voir pour travailler 
-		# en bloquant si < 2secondes ;  et non-bloquant + sleep au-delà (permet d'interrompre la mesure sur event stop à passer en argument)
-
-		self.write_i16(CMD_PROFILE_BLOCKING, ADDR_ACTION)
+		self.__action_cmd__(CMD_PROFILE_BLOCKING, _timeout)
 		
 		
 	def act_check_config (self):
-		self.write_i16(CMD_CHECK_CONFIG, ADDR_ACTION)
+		self.__action_cmd__(CMD_CHECK_CONFIG, 0.2)
 
 	def act_start_auto_mode (self):
-		self.write_i16(CMD_START_AUTO, ADDR_ACTION)
+		self.__action_cmd__(CMD_START_AUTO) # TODO timeout
+
+	def read_temp (self):
+		return self.read_i16(ADDR_TEMP_MOY)
 
 	def read_pitch (self):
 		return self.read_i16(ADDR_TANGAGE)

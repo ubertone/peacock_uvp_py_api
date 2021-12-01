@@ -9,10 +9,10 @@
 
 from array import *
 from struct import calcsize, unpack
-from math import sqrt, pi
+from math import sqrt, pi, pow
 
 from .apf_timestamp import decode_timestamp
-from .apf04_gain import _convert_code2gain, convert_code2dB_m, convert_code2dB, calc_gain
+from .apf04_gain import _convert_code2dB_trunc, convert_code2dB_m, convert_code2dB, calc_gain
 
 
 # @brief Utilise une frame pour récupérer un profil voulu (format UDT005)
@@ -116,10 +116,10 @@ def conversion_us_scalar(self, data_dict, n_avg, r_dvol, r_vol1):
 
 	# convert coded noise values to V
 	v_ref = 1.25
-	gain = pow(10, ((_convert_code2gain(1241)) / 20.)) # gain max
-	data_dict["noise_g_high"] = data_dict["noise_g_max"] * ((v_ref*2)/4096) / sqrt(n_avg) / gain
+	gain = pow(10, ((_convert_code2dB_trunc(1241)) / 20.)) # gain max
+	data_dict["noise_g_high"] = sqrt(data_dict["noise_g_max"]) * ((v_ref*2)/4096) / sqrt(n_avg) / gain
 	del data_dict["noise_g_max"]
 
-	gain = pow(10, ((_convert_code2gain(993)) / 20.)) # gain max - 10dB
-	data_dict["noise_g_low"] = data_dict["noise_g_mid"] * ((v_ref*2)/4096) / sqrt(n_avg) / gain
+	gain = pow(10, ((_convert_code2dB_trunc(993)) / 20.)) # gain max - 10dB
+	data_dict["noise_g_low"] = sqrt(data_dict["noise_g_mid"]) * ((v_ref*2)/4096) / sqrt(n_avg) / gain
 	del data_dict["noise_g_mid"]

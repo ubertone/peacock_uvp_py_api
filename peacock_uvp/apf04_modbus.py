@@ -11,8 +11,9 @@ import serial # Utilisé pour récuperer les donnée vennant de la liaison Séri
 from sys import platform
 import traceback
 import logging
+from time import time, sleep
 
-from .apf04_exception import apf04_error
+from .apf04_exception import apf04_error, apf04_exception
 from .modbus_crc import crc16
 
 def hex_print (_bytes):
@@ -47,12 +48,17 @@ class Apf04Modbus ():
 			# In case of a *nux system, we can find the port of the APF04 
 			# automatically thanks to the serial.tools.list_ports library 
 			# and knowing that the RS485 to USB adapter has PID:VID = 0403:6001
-			if platform in ["linux","linux2","darwin"]: # linux and Mac OS
+			if platform in ["linux","linux2","darwin","cygwin"]: # linux and Mac OS
 				import serial.tools.list_ports as lPort
 				reslt = lPort.comports()
 				for res in reslt:
-					if "0403:6001" in res[2] or "1A86:7523" in res[2]: # dongle USB avec et sans alim
+					#print(res[0], res[2])
+					# TODO privilégier une lecture du PID dans RES[2] et créer un dictionnaire des PID reconnus
+					if "0403:6001" in res[2] or "1A86:7523" in res[2] or "1486:5523" in res[2] or "1A86:5523" in res[2]: # dongle USB avec et sans alim
 						logging.debug("APF04 detected on serial port: %s", res[2])
+						self.usb_device = res[0]
+					else :
+						logging.debug("unknown device detected on serial port: %s (the last found will be selected)"%(res))
 						self.usb_device = res[0]
 
 			# for platform == "cygwin" and "win32", the serial port should be modified manually: 
@@ -66,7 +72,7 @@ class Apf04Modbus ():
 		if _baudrate :
 			self.connect(_baudrate)
 
-		# In order to reduce serial lattency of the linux driver, you may set the ASYNC_LOW_LATENCY flag :
+		# In order to reduce serial latency of the linux driver, you may set the ASYNC_LOW_LATENCY flag :
 		# setserial /dev/<tty_name> low_latency
 
 		logging.debug("end init")
@@ -74,8 +80,10 @@ class Apf04Modbus ():
 	def connect (self, _baudrate):
 		try :
 			# Create an instance of the Peacock's driver at a given baudrate
-			self.ser = serial.Serial(self.usb_device, _baudrate, timeout=2., \
+			self.ser = serial.Serial(self.usb_device, _baudrate, timeout=0.5, \
 					bytesize=8, parity='N', stopbits=1, xonxoff=0, rtscts=0)
+			# serial timeout is set to 500 ms. This can be changed by setting 
+			#   self.ser.timeout to balance between performance and efficiency
 		except serial.serialutil.SerialException : 
 			raise apf04_error (1005, "Unable to connect to the device.")
 
@@ -85,17 +93,6 @@ class Apf04Modbus ():
 			self.ser.close()
 		except :
 			pass
-
-	def set_timeout(self, _timeout):
-		""" @brief set the timeout of the serial connexion """
-		try :
-			logging.debug ("timeout is %s , set to %s"%(self.ser.timeout , _timeout))
-			# timeout pour la lecture des données :
-			self.ser.timeout = _timeout
-
-		except serial.serialutil.SerialException:
-			self.log("hardware apparently disconnected")
-			raise apf04_error(1107, "Fail to set timeout on modbus.")
 
 	def autobaud (self):
 		""" @brief automatically detect the baudrate
@@ -137,7 +134,7 @@ class Apf04Modbus ():
 		if _begin>addr_ram_end:
 			assert _begin!=addr_reg_action and _size!=1, "Warning, access at %d, size= %d bytes not allowed"%(_begin, _size)
 
-	def __read__(self, _size):
+	def __read__(self, _size, _timeout=0.0):
 		""" @brief Low level read method
 		@param _size number of bytes to read
 		"""
@@ -145,7 +142,14 @@ class Apf04Modbus ():
 			raise apf04_error(2002, "ask to read null size data." )
 
 		try :
-			read_data = self.ser.read(_size)
+			read_data = b''
+			start_time = time()
+			# the read of modbus is not interuptible
+			while (True):
+				read_data += self.ser.read(_size)
+				if len (read_data) == _size or time() - start_time > _timeout:
+					break
+
 		except serial.serialutil.SerialException:
 			#self.log("hardware apparently disconnected")
 			#read_data = b''
@@ -154,11 +158,11 @@ class Apf04Modbus ():
 		if len (read_data) != _size :
 			if len (read_data) == 0:
 				logging.debug ("WARNING timeout, no answer from device")
-				raise apf04_error(2003, "timeout : device do not answer (please check cable connexion or baudrate)" )
+				raise apf04_exception(2003, "timeout : device do not answer (please check cable connexion, timeout or baudrate)" )
 			else :
-				logging.debug ("WARNING timeout, uncomplete answer from device (%d/%d)"%(len (read_data), _size))
-				raise apf04_error(2004, "timeout : uncomplete answer from device (please check timeout or baudrate) (%d/%d)"%(len (read_data), _size))
-		
+				logging.debug ("WARNING, uncomplete answer from device (%d/%d)"%(len (read_data), _size))
+				raise apf04_exception(2004, "timeout : uncomplete answer from device (please check timeout or baudrate) (%d/%d)"%(len (read_data), _size))
+
 		return read_data
 
 
@@ -256,19 +260,21 @@ class Apf04Modbus ():
 
 	############## Write functions ##############################################
 
-	def write_i16 (self, _value, _addr):
+	def write_i16 (self, _value, _addr, _timeout=0.0):
 		""" @brief Write one word (signed 16 bits)
 		@param _value : value of the word
 		@param _addr : destination data address (given in bytes)
 		"""
 		try:
-			self.write_buf_i16 ([_value], _addr)
+			self.write_buf_i16 ([_value], _addr, _timeout)
+		except apf04_exception as ae:
+			raise ae # apf04_exception are simply raised upper
 		except :
 			print(traceback.format_exc())
 			raise apf04_error(3000, "write_i16 : FAIL to write 0%04x at %d\n"%(_value, _addr))
 
 
-	def write_buf_i16 (self, _data, _addr):
+	def write_buf_i16 (self, _data, _addr, _timeout=0.0):
 		""" @brief Write buffer 
 		@param _data : list of words (max size : 123 words)
 		@param _addr : data address (given in bytes)
@@ -285,11 +291,11 @@ class Apf04Modbus ():
 				#print (write_query)
 				self.ser.write(write_query)
 			except serial.serialutil.SerialException:
-				self.log("hardware apparently disconnected")
+				logging.error("hardware apparently disconnected")
 				raise apf04_error(3004, "write_buf_i16 : hardware apparently disconnected")
 
 			# read answer
-			slave_response = self.__read__(2)
+			slave_response = self.__read__(2, _timeout)
 			# TODO 1 : format de la trame d'erreur et codes d'erreurs effectivement traités
 			if slave_response[1] == 16 :
 				slave_response += self.__read__(6)
@@ -302,6 +308,8 @@ class Apf04Modbus ():
 				print("error while writting")
 				print (slave_response)
 
+		except apf04_exception as ae:
+			raise ae # apf04_exception are simply raised upper
 		except :
 			print(traceback.format_exc())
 			raise apf04_error(3001, "write_buf_i16 : Fail to write")

@@ -15,13 +15,11 @@ class apf04_base_exception (Exception):
 		return "base_exception %d : %s"%(self.code, self.message)
 
 class apf04_exception (apf04_base_exception):
+	# something that happend occasionnaly
 	def __str__(self):
 		return "apf04_exception %d : %s"%(self.code, self.message)
 
 class apf04_error (apf04_base_exception):
+	# something that should not happend
 	def __str__(self):
 		return "apf04_error %d : %s"%(self.code, self.message)
-
-class apf04_protocol_error (apf04_base_exception):
-	def __str__(self):
-		return "apf04_protocol_error %d : %s"%(self.code, self.message)

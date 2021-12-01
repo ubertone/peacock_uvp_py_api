@@ -14,11 +14,16 @@ from struct import pack, unpack, calcsize
 UBT_EPOCH = datetime(2020, 1, 1, tzinfo=timezone.utc)
 
 def encode_timestamp(_datetime):
-	""" @brief encode timestamp in words
-	@param _datetime timestap
-	@return bytearray 
-	ubertone's epoch :
-	- 01/01/2020 starting from version 2.01
+	"""Encode timestamp in words
+
+	Args:
+		_datetime: timestap
+
+	Returns:
+		bytearray representing the encoded timestamp
+	  
+	  ubertone's epoch :
+	  - 01/01/2020 starting from version 2.01
 	"""
 	
 	timestamp = mktime(_datetime.timetuple()) + _datetime.microsecond/1e6 - mktime(UBT_EPOCH.timetuple())
@@ -32,8 +37,13 @@ def encode_timestamp(_datetime):
 										  int(1000.*(timestamp%1)))
 
 def decode_timestamp(_encoded_datetime):
-	""" @brief extract time stamp from a byte array
-	return : timestamp and offset
+	"""Extract timestamp from a byte array
+
+	Args:
+		_encoded_datetime: 
+
+	Returns:
+		timestamp and offset
 	"""
 	timestamp_size = calcsize('hhh')
 	nsec_pF, nsec_pf, msec = unpack('hhh', _encoded_datetime[0:timestamp_size])
