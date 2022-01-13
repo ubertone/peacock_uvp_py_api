@@ -22,11 +22,10 @@ class Apf04Driver (Apf04Modbus):
 	""" @brief gère l'instrument APF04
 	"""
 	# TODO : tester la com dans un init par une lecture de la version 
-	def __init__(self, _baudrate, _f_sys, _dev=None):
+	def __init__(self, _baudrate, _f_sys, _dev=None, _addr_dict=None):
 		self.f_sys=_f_sys
 		Apf04Modbus.__init__(self, _baudrate, _dev)
-		self.addr = get_addr_dict(self.read_version()[1])
-		
+		self.addr = _addr_dict
 
 	def new_config (self):
 		"""  @brief create an empty config

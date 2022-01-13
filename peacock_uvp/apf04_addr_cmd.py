@@ -56,9 +56,11 @@ def get_addr_dict(version_c, addr_json=None):
         Dictionnary with the addresses names as keys and addresses in hexa as values.
     """
 
+    version_c = int(version_c)
+
     if addr_json:
         with open(addr_json) as json_file:
-	        addr_dict = json.loads(json_file.read())
+            addr_dict = json.loads(json_file.read())
     else:
         if version_c <= 52 and version_c >= 47:
             addr_json = os.path.abspath(__file__).split('/peacock_uvp/')[0] + "/peacock_uvp/addr_S-Firmware-47.json"
@@ -76,12 +78,14 @@ def get_addr_dict(version_c, addr_json=None):
     logging.debug("addr json: %s"%addr_json)
     logging.debug("addr dict: %s"%addr_dict)
 
+    print(addr_dict)
+
     # conversion of haxa strings to hexa number
     if addr_dict:
         for key,value in addr_dict.items():
             if isinstance(value, str):
                 if "x" in value:
-                    addr_dict |= {key:int(value, 16)}
+                    addr_dict.update({key:int(value, 16)})
 
     logging.debug("addr dict converted: %s"%addr_dict)
 
