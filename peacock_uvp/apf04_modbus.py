@@ -21,6 +21,45 @@ def hex_print (_bytes):
 	"""
 	print (''.join('%02x'%i for i in _bytes))
 
+def autodetect_usb_device() :
+	# In case of a *nux system, we can find the port of the APF04 
+	# automatically thanks to the serial.tools.list_ports library 
+	# and knowing that the RS485 to USB adapter has PID:VID = 0403:6001
+	usb_device = None
+
+	# Known USB chips defined by VID/PID
+	known_chips ={"0403:6001", "1486:5523", "1A86:5523", "1A86:7523"}
+
+	if platform in ["linux","linux2","darwin","cygwin"]: # linux and Mac OS
+		import serial.tools.list_ports as lPort
+		reslt = lPort.comports()
+		for res in reslt:
+			logging.debug("checking %s / %s"%(res[0],res[2]))
+			# get USB device id
+			try:
+				device_id = res[2].split("VID:PID=")[1].split(" ")[0]
+				logging.debug("usb_device_id = %s"%device_id)
+			except:
+				device_id = None
+			
+			# check if the device is known
+			if device_id in known_chips : # dongle USB avec et sans alim
+				logging.debug("APF04 detected on serial port: %s", res[2])
+				usb_device = res[0]
+			elif usb_device == None : #if no device has been detected yet
+				print("unknown device detected on serial port: %s (the last found will be selected)"%(res))
+				print("You should add the device manually in 'known_chips' dict")
+				usb_device = res[0]
+
+	# for platform == "cygwin" and "win32", the serial port should be modified manually: 
+	# for example "/dev/ttyS3" on cygwin or "COM10" on Windows
+
+	if usb_device is None : # usb device could not be detected
+		logging.critical("USB device cannot be detected automatically, check the wiring or specify the device port.")
+		raise apf04_error (1000, "No device port defined.")
+	
+	return usb_device
+
 class Apf04Modbus ():
 	"""	@brief Modbus communication layer
 	
@@ -45,28 +84,8 @@ class Apf04Modbus ():
 		self.usb_device = _dev
 
 		if self.usb_device is None :
-			# In case of a *nux system, we can find the port of the APF04 
-			# automatically thanks to the serial.tools.list_ports library 
-			# and knowing that the RS485 to USB adapter has PID:VID = 0403:6001
-			if platform in ["linux","linux2","darwin","cygwin"]: # linux and Mac OS
-				import serial.tools.list_ports as lPort
-				reslt = lPort.comports()
-				for res in reslt:
-					#print(res[0], res[2])
-					# TODO privilégier une lecture du PID dans RES[2] et créer un dictionnaire des PID reconnus
-					if "0403:6001" in res[2] or "1A86:7523" in res[2] or "1486:5523" in res[2] or "1A86:5523" in res[2]: # dongle USB avec et sans alim
-						logging.debug("APF04 detected on serial port: %s", res[2])
-						self.usb_device = res[0]
-					else :
-						logging.debug("unknown device detected on serial port: %s (the last found will be selected)"%(res))
-						self.usb_device = res[0]
-
-			# for platform == "cygwin" and "win32", the serial port should be modified manually: 
-			# for example "/dev/ttyS3" on cygwin or "COM10" on Windows
-
-			if self.usb_device is None : # usb device could not be detected
-				logging.critical("USB device cannot be detected automatically, check the wiring or specify the device port.")
-				raise apf04_error (1000, "No device port defined.")
+			print ("Getting the USB device automatically")
+			self.usb_device = autodetect_usb_device()
 
 		logging.debug("usb_device is at %s with baudrate %s"%(self.usb_device, _baudrate))
 		if _baudrate :
