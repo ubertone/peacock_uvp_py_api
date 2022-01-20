@@ -11,6 +11,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 # import modules
 from peacock_uvp.apf04_driver import Apf04Driver
+from peacock_uvp.apf04_addr_cmd import get_addr_dict
 
 
 # The main test class
@@ -20,6 +21,7 @@ class TestApf04Driver(unittest.TestCase):
 		# Create an instance of the Peacock's driver (with 230400/57600  BAUD rate)
 		apf_instance = Apf04Driver(750000, 36e6)
 		#apf_instance = Apf04Driver(230400, 18e6)
+		apf_instance.addr = get_addr_dict(apf_instance.read_version()[1])
 
 		# Read the firmware version
 		vhdl_v, c_v = apf_instance.read_version()
