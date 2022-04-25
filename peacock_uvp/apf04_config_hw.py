@@ -115,6 +115,7 @@ class ConfigHw ():
 
 		# on a vu plus simple comme écriture ...
 		self.tr = cast_int16(int(''.join(ele for ele in _config_dict['tr_out'] if ele.isdigit())))-1
+		# TODO ça limite à 9, attention
 
 		if _config_dict['method'] == "ppc_cont":
 			self.burst_mode = False
