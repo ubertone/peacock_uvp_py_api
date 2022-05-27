@@ -13,6 +13,7 @@ import json
 # import modules
 from peacock_uvp.apf04_driver import Apf04Driver
 from peacock_uvp.apf04_measures import extract_measures
+from peacock_uvp.apf04_addr_cmd import get_addr_dict
 
 # The main test class
 class TestApf04Handler(unittest.TestCase):
@@ -28,8 +29,10 @@ class TestApf04Handler(unittest.TestCase):
 			#print ("#### Settings from file :")
 			#print(json.dumps(settings, indent=4, sort_keys=True))
 
-		# Create an instance of the Peacock's driver (with 750000/230400/57600 BAUD rate)
-		apf_instance = Apf04Driver(230400, 36e6)
+		# Create an instance of the Peacock's driver (with 230400/57600 BAUD rate)
+		#apf_instance = Apf04Driver(230400, 18e6)
+		apf_instance = Apf04Driver(750000, 36e6)
+		apf_instance.addr = get_addr_dict(apf_instance.read_version()[1])
 		# Read the firmware version
 		apf_instance.read_version()
 
@@ -87,7 +90,6 @@ class TestApf04Handler(unittest.TestCase):
 
 			print("time = ", us_data["timestamp"].strftime("%Y-%m-%dT%H:%M:%S.%f"))
 			print (us_data["velocity"])
-			#print (us_data["snr"])
 
 
 		stopTs = time()

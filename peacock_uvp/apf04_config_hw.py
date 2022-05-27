@@ -90,9 +90,8 @@ class ConfigHw ():
 		r_vol1 = _sound_speed/(2.*f0)*self.c_vol1 + r_em/2.
 
 		self.c_dvol = cast_int16(2./_sound_speed * f0 *_config_dict['r_dvol'])
-		c_dvol_min =int(ceil(0.75e-6 * f0 + 1))
-		if self.c_dvol < c_dvol_min: # constraint from APF04 hardware
-			self.c_dvol = cast_int16(c_dvol_min)
+		if self.c_dvol < 2: # constraint from APF04 hardware
+			self.c_dvol = cast_int16(2)
 		r_dvol = _sound_speed/(2.*f0)*self.c_dvol
 		
 		self.gain_ca1 = cast_int16(convert_dB_m2code(_config_dict['gain_function']['a1'], r_dvol))
@@ -116,6 +115,7 @@ class ConfigHw ():
 
 		# on a vu plus simple comme écriture ...
 		self.tr = cast_int16(int(''.join(ele for ele in _config_dict['tr_out'] if ele.isdigit())))-1
+		# TODO ça limite à 9, attention
 
 		if _config_dict['method'] == "ppc_cont":
 			self.burst_mode = False

@@ -1,0 +1,23 @@
+{
+    "ADDR_SOUND_SPEED_AUTO" : "0x0004",
+    "ADDR_SOUND_SPEED_SET" : "0x0005",
+
+    "ADDR_CONFIG_ID" : "0x0010",
+    "ADDR_CONFIG" : "0x0011",
+    "OFFSET_CONFIG" : 20,
+    "SIZE_CONFIG" :   17,
+
+    "ADDR_TANGAGE" : "0x0058",
+    "ADDR_ROULIS" : "0x0059",
+    "ADDR_TEMP_MOY" : "0x005A",
+
+    "ADDR_SOUND_SPEED" : "0x005B",
+    "ADDR_GAIN_CA0" : "0x005C",
+    "ADDR_GAIN_CA1" : "0x005D",
+    "ADDR_NOISE_GMAX" : "0x005E",
+    "ADDR_NOISE_GMID" : "0x005F",
+
+    "ADDR_PROFILE_HEADER" : "0x0058",
+    "SIZE_PROFILE_HEADER" : 8,
+    "ADDR_PROFILE_DATA" : "0x0060"
+}
