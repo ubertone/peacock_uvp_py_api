@@ -44,7 +44,7 @@ ADDR_VERSION_VHDL = 0xFFFE
 ADDR_MODEL_YEAR   = 0x0001
 ADDR_SERIAL_NUM   = 0x0002
 
-def get_addr_dict(version_c, addr_json=None):
+def get_addr_dict(version_c=None, addr_json=None):
     """
     Gets the addresses in RAM given the firmware version.
 
@@ -56,12 +56,13 @@ def get_addr_dict(version_c, addr_json=None):
         Dictionnary with the addresses names as keys and addresses in hexa as values.
     """
 
-    version_c = int(version_c)
 
     if addr_json:
         with open(addr_json) as json_file:
             addr_dict = json.loads(json_file.read())
-    else:
+    elif version_c:
+        version_c = int(version_c)
+        #TODO à l'occasion ajouter un check model==PEACOCK (=1)
         if version_c <= 52 and version_c >= 47:
             addr_json = os.path.abspath(__file__).split('/peacock_uvp/')[0] + "/peacock_uvp/addr_S-Firmware-47.json"
         else:
@@ -73,6 +74,10 @@ def get_addr_dict(version_c, addr_json=None):
             # TODO mb 20/10/2021 choisir si on veut mettre un comportement par défaut ou fonctionner par exception
             logging.debug("WARNING: Unknown Addresses for this S-Firmware version.")
             addr_dict = None
+    else:
+        # TODO mb 20/10/2021 choisir si on veut mettre un comportement par défaut ou fonctionner par exception
+        logging.debug("WARNING: Unknown Addresses unkown S-Firmware version.")
+        addr_dict = None
     
     logging.debug(os.listdir("."))
     logging.debug("addr json: %s"%addr_json)
