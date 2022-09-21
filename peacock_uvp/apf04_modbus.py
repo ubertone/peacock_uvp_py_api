@@ -13,7 +13,7 @@ import traceback
 import logging
 from time import time, sleep
 
-from .apf04_exception import apf04_error, apf04_exception
+from .apf04_exception import apf04_exception
 from .modbus_crc import crc16
 
 def hex_print (_bytes):
@@ -35,7 +35,7 @@ def autodetect_usb_device() :
 		reslt = lPort.comports()
 		for res in reslt:
 			logging.debug("checking %s / %s"%(res[0],res[2]))
-			# get USB device id
+			# get USB device id, not working on cygwin
 			try:
 				device_id = res[2].split("VID:PID=")[1].split(" ")[0]
 				logging.debug("usb_device_id = %s"%device_id)
@@ -56,7 +56,7 @@ def autodetect_usb_device() :
 
 	if usb_device is None : # usb device could not be detected
 		logging.critical("USB device cannot be detected automatically, check the wiring or specify the device port.")
-		raise apf04_error (1000, "No device port defined.")
+		raise apf04_exception (1000, "No device port defined.")
 	
 	return usb_device
 
@@ -104,7 +104,7 @@ class Apf04Modbus ():
 			# serial timeout is set to 500 ms. This can be changed by setting 
 			#   self.ser.timeout to balance between performance and efficiency
 		except serial.serialutil.SerialException : 
-			raise apf04_error (1005, "Unable to connect to the device.")
+			raise apf04_exception (1005, "Unable to connect to the device.")
 
 	def __del__(self):
 		""" @brief close serial port if necessary """
@@ -157,8 +157,8 @@ class Apf04Modbus ():
 		""" @brief Low level read method
 		@param _size number of bytes to read
 		"""
-		if _size == 0:
-			raise apf04_error(2002, "ask to read null size data." )
+		if _size == 0: # TODO better do an assert ?
+			raise apf04_exception(2002, "ask to read null size data." )
 
 		try :
 			read_data = b''
@@ -172,7 +172,7 @@ class Apf04Modbus ():
 		except serial.serialutil.SerialException:
 			#self.log("hardware apparently disconnected")
 			#read_data = b''
-			raise apf04_error(1010, "Hardware apparently disconnected." )
+			raise apf04_exception(1010, "Hardware apparently disconnected." )
 
 		if len (read_data) != _size :
 			if len (read_data) == 0:
@@ -229,7 +229,7 @@ class Apf04Modbus ():
 		except serial.serialutil.SerialException:
 			#self.log("hardware apparently disconnected")
 			# TODO traiter les différentes erreurs, se mettre en 3 MBaud sur R0W (bcp de buffer overflow !)
-			raise apf04_error(1010, "Hardware apparently disconnected." )
+			raise apf04_exception(1010, "Hardware apparently disconnected." )
 
 		# read answer
 		slave_response = self.__read__(3)
@@ -287,10 +287,10 @@ class Apf04Modbus ():
 		try:
 			self.write_buf_i16 ([_value], _addr, _timeout)
 		except apf04_exception as ae:
-			raise ae # apf04_exception are simply raised upper
+			raise ae # all apf04_exception are simply raised upper
 		except :
-			print(traceback.format_exc())
-			raise apf04_error(3000, "write_i16 : FAIL to write 0%04x at %d\n"%(_value, _addr))
+			#print(traceback.format_exc())
+			raise apf04_exception(3000, "write_buf_i16 : hardware apparently disconnected")
 
 
 	def write_buf_i16 (self, _data, _addr, _timeout=0.0):
@@ -311,7 +311,7 @@ class Apf04Modbus ():
 				self.ser.write(write_query)
 			except serial.serialutil.SerialException:
 				logging.error("hardware apparently disconnected")
-				raise apf04_error(3004, "write_buf_i16 : hardware apparently disconnected")
+				raise apf04_exception(3004, "write_buf_i16 : hardware apparently disconnected")
 
 			# read answer
 			slave_response = self.__read__(2, _timeout)
@@ -328,7 +328,7 @@ class Apf04Modbus ():
 				print (slave_response)
 
 		except apf04_exception as ae:
-			raise ae # apf04_exception are simply raised upper
+			raise ae # all apf04_exception are simply raised upper
 		except :
 			print(traceback.format_exc())
-			raise apf04_error(3001, "write_buf_i16 : Fail to write")
+			raise apf04_exception(3001, "write_buf_i16 : Fail to write")
