@@ -1,0 +1,17 @@
+{
+    "const_version": 1.3,
+    "product_model": "Peacock UVP",
+    "serial_num": "200000",
+    "product_id": "peacockuvp200000",
+    "software": {
+        "version": "em1.0"
+    },
+    "hardware": {
+        "board_version": "na/APF04E",
+        "serial": "/dev/ttyAMA0",
+        "firmware_version" : "na",
+        "logic_version" : "na",
+        "f_sys": 36e6,
+        "baudrate":750000
+    }
+}

@@ -9,7 +9,7 @@
 import os
 import json
 import logging
-logging.basicConfig(level=logging.DEBUG)
+#logging.basicConfig(level=logging.DEBUG)
 
 ## Adresses et commandes de l'APF04
 
@@ -22,7 +22,7 @@ CMD_PROFILE_BLOCKING = 3
 # numéro de commande mode non bloquant 
 CMD_PROFILE_NON_BLOCKING = 4 
 # numéro de commande mesure avec remontée des IQ 
-CMD_PROFILE_IQ = 6 
+CMD_PROFILE_IQ = 191 
 # numéro de commande démarrage du mode auto 
 CMD_START_AUTO = 2 
 # numéro de commande verification de la configuration courante 

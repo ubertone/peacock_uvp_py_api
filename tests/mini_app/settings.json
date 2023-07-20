@@ -1,0 +1,35 @@
+{
+    "configs": {
+        "num1": {
+            "f0": 3000000.0,
+            "gain_function": {
+                "a0": 49.9955,
+                "a1": 0.0,
+                "auto": true
+            },
+            "method": "ppc_cont",
+            "n_ech": 50,
+            "n_profile": 1,
+            "n_vol": 200,
+            "phase_coding": true,
+            "prf": 1000.0,
+            "r_dvol": 0.0019733333333333334,
+            "r_em": 0.0019733333333333334,
+            "r_vol1": 0.007893333333333334,
+            "static_echo_filter": true,
+            "tr_out": "tr1",
+            "v_min": -0.06701986216016886
+        }
+    },
+    "global": {
+        "comments": "",
+        "configuration_order": [
+            "num1"
+        ],
+        "operator": "",
+        "sound_speed": {
+            "source": "set",
+            "value": 1480.0
+        }
+    }
+}

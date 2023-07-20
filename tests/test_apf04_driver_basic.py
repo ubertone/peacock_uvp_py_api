@@ -30,7 +30,8 @@ class TestApf04Driver(unittest.TestCase):
 		vhdl_v, c_v = apf_instance.read_version()
 		print("vhdl: %d, c: %d"%(vhdl_v, c_v))
 
-		print("Firmware version : %s"%apf_instance.read_buf_i16(0, 3))
+		print("Firmware version: %s"%apf_instance.read_buf_i16(0, 3))
+		print("serial num: %2d%04d"%(apf_instance.year-2000, apf_instance.serial_num))
 		print ("---------------------------------------------")
 
 		# Read the default configuration stored in the Peacock UVP device :
